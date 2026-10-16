@@ -23,6 +23,8 @@ export type Answers = Record<string, string>;
 export interface GenerateDeps {
   gemini: GeminiClient;
   pexelsKey?: string;
+  /** Uzoq ishlarda foydalanuvchiga holatni ko'rsatish (masalan, "3/9 bo'lim yozilmoqda") */
+  progress?: (text: string) => Promise<void>;
 }
 
 export interface GenerateResult {
@@ -35,8 +37,12 @@ export interface GenerateResult {
 export interface ServiceDef {
   id: string;
   title: string;
-  /** Kredit narxi */
+  /** Kredit narxi (menyuda ko'rsatiladigan eng past narx) */
   cost: number;
+  /** Narx javoblarga bog'liq bo'lsa (masalan, kurs ishi hajmi) */
+  costFor?: (answers: Answers) => number;
+  /** Kutish vaqti haqida matn, masalan "1-3 daqiqa" */
+  eta?: string;
   enabled: boolean;
   steps: WizardStep[];
   generate?: (answers: Answers, deps: GenerateDeps) => Promise<GenerateResult>;
@@ -55,3 +61,7 @@ export const LANGUAGE_PROMPT: Record<string, string> = {
   ru: "rus tilida",
   en: "ingliz tilida",
 };
+
+export function costOf(service: ServiceDef, answers: Answers) {
+  return service.costFor?.(answers) ?? service.cost;
+}
