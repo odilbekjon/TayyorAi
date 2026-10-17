@@ -54,7 +54,7 @@ export function createBot({ config, gemini }: BotDeps) {
     const next = stepIndex + 1;
     const update: Record<string, unknown> = { "wizard.step": next };
     if (value !== null) update[`wizard.answers.${step.key}`] = value;
-    const updated = await User.findOneAndUpdate({ telegramId }, { $set: update }, { new: true });
+    const updated = await User.findOneAndUpdate({ telegramId }, { $set: update }, { returnDocument: "after" });
     if (!updated?.wizard) return;
 
     if (next < service.steps.length) await askStep(ctx, service, next);
@@ -149,7 +149,7 @@ export function createBot({ config, gemini }: BotDeps) {
     if (!config.ADMIN_IDS.includes(ctx.from!.id)) return;
     const [id, amount] = ctx.match.split(/\s+/).map(Number);
     if (!id || !amount) return ctx.reply("Format: /kredit <telegramId> <miqdor>");
-    const user = await User.findOneAndUpdate({ telegramId: id }, { $inc: { credits: amount } }, { new: true });
+    const user = await User.findOneAndUpdate({ telegramId: id }, { $inc: { credits: amount } }, { returnDocument: "after" });
     await ctx.reply(user ? `✅ ${id}: ${user.credits} kredit` : "Foydalanuvchi topilmadi");
   });
 

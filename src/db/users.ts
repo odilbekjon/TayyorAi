@@ -9,7 +9,7 @@ export async function ensureUser(from: TgUser, freeCredits: number) {
       $set: { firstName: from.first_name, username: from.username },
       $setOnInsert: { credits: freeCredits },
     },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: "after" },
   );
 }
 
@@ -18,7 +18,7 @@ export async function tryLock(telegramId: number, cost: number) {
   return User.findOneAndUpdate(
     { telegramId, busy: { $ne: true }, credits: { $gte: cost } },
     { $set: { busy: true } },
-    { new: true },
+    { returnDocument: "after" },
   );
 }
 

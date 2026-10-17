@@ -30,6 +30,28 @@ export class GeminiClient {
   }
 
   /**
+   * Ishga tushganda model mavjudligini tekshiradi. Google eski modellarni yangi
+   * foydalanuvchilar uchun o'chirib qo'yadi (404), bu holda bot ishlamaydi.
+   */
+  async checkModel(): Promise<void> {
+    try {
+      await this.ai.models.generateContent({ model: this.model, contents: "ping", config: { maxOutputTokens: 8 } });
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) {
+        throw new Error(
+          `Gemini modeli "${this.model}" mavjud emas yoki o'chirilgan. .env faylidagi GEMINI_MODEL qiymatini ` +
+            `yangilang (masalan: gemini-3.8-flash). Google xabari: ${err.message}`,
+        );
+      }
+      if (err instanceof ApiError && [400, 401, 403].includes(err.status)) {
+        throw new Error(`GEMINI_API_KEY noto'g'ri yoki ruxsat yo'q. Google xabari: ${err.message}`);
+      }
+      // Tarmoq yoki limit xatosi botni to'xtatmasligi kerak
+      console.warn("⚠️ Gemini tekshiruvi o'tmadi:", err instanceof Error ? err.message : err);
+    }
+  }
+
+  /**
    * Javobni JSON schema bo'yicha oladi va zod bilan tekshiradi.
    * Model ba'zan noto'g'ri tuzilma qaytaradi, shuning uchun bir marta qayta urinadi.
    * Bepul tarifda daqiqalik limit tez tugaydi: 429/503 bo'lsa biroz kutib qayta so'raydi.
