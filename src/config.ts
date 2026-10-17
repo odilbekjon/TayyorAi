@@ -5,7 +5,7 @@ const EnvSchema = z.object({
   GEMINI_API_KEY: z.string().min(10, "GEMINI_API_KEY kiritilmagan"),
   GEMINI_MODEL: z.string().default("gemini-2.5-flash"),
   MONGODB_URI: z.string().startsWith("mongodb", "MONGODB_URI noto'g'ri"),
-  PEXELS_API_KEY: z.string().optional().transform((v) => v || undefined),
+  PEXELS_API_KEY: z.string().optional(),
   FREE_CREDITS: z.coerce.number().int().min(0).default(20),
   ADMIN_IDS: z
     .string()
@@ -21,7 +21,13 @@ const EnvSchema = z.object({
 export type Config = z.infer<typeof EnvSchema>;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
-  const parsed = EnvSchema.safeParse(env);
+  // .env da bo'sh qoldirilgan qiymat (masalan "FREE_CREDITS=") standart qiymatni olishi kerak, 0 emas
+  const cleaned = Object.fromEntries(
+    Object.entries(env)
+      .map(([k, v]) => [k, v?.trim()])
+      .filter(([, v]) => v),
+  );
+  const parsed = EnvSchema.safeParse(cleaned);
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `- ${i.path.join(".")}: ${i.message}`).join("\n");
     throw new Error(`.env sozlamalarida xato:\n${issues}`);
