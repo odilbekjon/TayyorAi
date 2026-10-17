@@ -7,10 +7,12 @@
     "build": "tsc -p tsconfig.json",
     "start": "node --env-file=.env dist/index.js",
     "typecheck": "tsc --noEmit",
-    "demo:slides": "tsx scripts/demo-slides.ts"
+    "demo:slides": "tsx scripts/demo-slides.ts",
+    "demo:docs": "tsx scripts/demo-docs.ts"
   },
   "dependencies": {
     "@google/genai": "^2.30.0",
+    "docx": "^9.11.0",
     "grammy": "^1.46.0",
     "mongoose": "^9.11.2",
     "pptxgenjs": "^4.0.1",

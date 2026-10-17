@@ -6,7 +6,7 @@ import { ensureUser, tryLock, unlock } from "../db/users.js";
 import { escapeHtml } from "../lib/html.js";
 import { Limiter } from "../lib/limiter.js";
 import { SERVICES, getService } from "../services/registry.js";
-import type { Answers, ServiceDef } from "../services/types.js";
+import { costOf, type Answers, type ServiceDef } from "../services/types.js";
 import { backToMenu, confirmKeyboard, mainMenu, stepKeyboard } from "./keyboards.js";
 import { texts } from "./texts.js";
 
@@ -21,7 +21,7 @@ export function createBot({ config, gemini }: BotDeps) {
   const limiter = new Limiter(2);
 
   const html = { parse_mode: "HTML" as const };
-  const prices = SERVICES.map((s) => `${s.title}: ${s.cost} kredit`).join("\n");
+  const prices = SERVICES.map((s) => `${s.title}: ${s.cost} ${s.costFor ? "kreditdan" : "kredit"}`).join("\n");
 
   async function showMenu(ctx: Context, text: string) {
     await ctx.reply(text, { ...html, reply_markup: mainMenu() });
@@ -40,7 +40,7 @@ export function createBot({ config, gemini }: BotDeps) {
         const label = s.options?.find((o) => o.value === value)?.label ?? value;
         return `• ${escapeHtml(label)}`;
       });
-    const text = [texts.summaryTitle, service.title, "", ...lines, texts.summaryCost(service.cost, credits)].join("\n");
+    const text = [texts.summaryTitle, service.title, "", ...lines, texts.summaryCost(costOf(service, answers), credits)].join("\n");
     await ctx.reply(text, { ...html, reply_markup: confirmKeyboard() });
   }
 
@@ -61,19 +61,29 @@ export function createBot({ config, gemini }: BotDeps) {
     else await showSummary(ctx, service, (updated.wizard.answers ?? {}) as Answers, updated.credits);
   }
 
-  async function runJob(ctx: Context, telegramId: number, service: ServiceDef, answers: Answers) {
+  async function runJob(ctx: Context, telegramId: number, service: ServiceDef, answers: Answers, cost: number) {
     const started = Date.now();
-    const progress = await ctx.reply(texts.working(limiter.queued));
+    const header = texts.working(service.eta ?? "20-60 soniya", limiter.queued);
+    const progress = await ctx.reply(header);
+    // Telegram limitlariga tushmaslik uchun holat xabarini 3 soniyada bir martadan ko'p yangilamaymiz
+    let lastEdit = 0;
+    const onProgress = async (text: string) => {
+      if (Date.now() - lastEdit < 3000) return;
+      lastEdit = Date.now();
+      await ctx.api.editMessageText(progress.chat.id, progress.message_id, `${header}\n\n${text}`).catch(() => undefined);
+    };
     try {
-      const result = await limiter.run(() => service.generate!(answers, { gemini, pexelsKey: config.PEXELS_API_KEY }));
+      const result = await limiter.run(() =>
+        service.generate!(answers, { gemini, pexelsKey: config.PEXELS_API_KEY, progress: onProgress }),
+      );
       await ctx.replyWithDocument(new InputFile(result.file, result.filename), {
         caption: result.caption,
         ...html,
         reply_markup: backToMenu(),
       });
-      await unlock(telegramId, service.cost);
+      await unlock(telegramId, cost);
       await Order.create({
-        telegramId, service: service.id, answers, status: "done", credits: service.cost,
+        telegramId, service: service.id, answers, status: "done", credits: cost,
         durationMs: Date.now() - started, usage: result.usage,
       });
     } catch (err) {
@@ -185,15 +195,17 @@ export function createBot({ config, gemini }: BotDeps) {
       return showMenu(ctx, texts.noWizard);
     }
 
-    const locked = await tryLock(telegramId, service.cost);
+    const answers = (current.wizard.answers ?? {}) as Answers;
+    const cost = costOf(service, answers);
+    const locked = await tryLock(telegramId, cost);
     if (!locked) {
-      return ctx.reply(current.busy ? texts.busy : texts.notEnoughCredits(service.cost, current.credits), {
+      return ctx.reply(current.busy ? texts.busy : texts.notEnoughCredits(cost, current.credits), {
         ...html,
         reply_markup: backToMenu(),
       });
     }
     // Uzoq ishni kutmaymiz, aks holda bot boshqa foydalanuvchilarga javob bermay qoladi
-    void runJob(ctx, telegramId, service, (current.wizard.answers ?? {}) as Answers);
+    void runJob(ctx, telegramId, service, answers, cost);
   });
 
   // Matnli javoblar
