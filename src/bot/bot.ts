@@ -2,8 +2,8 @@ import { Bot, GrammyError, InputFile, type Context } from "grammy";
 import { AiBusyError, type GeminiClient } from "../ai/gemini.js";
 import type { Config } from "../config.js";
 import { Order, User } from "../db/models.js";
-import { createActivityTracker, findUser, getStats, recentUsers } from "../db/stats.js";
-import { ensureUser, tryLock, unlock } from "../db/users.js";
+import { createActivityTracker, findUser, formatTashkent, getStats, recentUsers } from "../db/stats.js";
+import { ensureUser, grantSubscription, tryLock, unlock } from "../db/users.js";
 import { escapeHtml } from "../lib/html.js";
 import { Limiter } from "../lib/limiter.js";
 import { SERVICES, getService } from "../services/registry.js";
@@ -126,7 +126,12 @@ export function createBot({ config, gemini }: BotDeps) {
 
   const showBalance = async (ctx: Context) => {
     const user = await ensureUser(ctx.from!, config.FREE_CREDITS);
-    await ctx.reply(texts.balance(user.credits, prices), { ...html, reply_markup: backToMenu() });
+    const until = user.subscriptionUntil;
+    const subscription =
+      until && until.getTime() > Date.now()
+        ? texts.subscriptionActive(formatTashkent(until).slice(0, 10), Math.ceil((until.getTime() - Date.now()) / 86_400_000))
+        : texts.subscriptionNone(config.SUBSCRIPTION_PRICE, config.SUBSCRIPTION_CREDITS, config.SUBSCRIPTION_DAYS);
+    await ctx.reply(texts.balance(user.credits, prices, subscription), { ...html, reply_markup: backToMenu() });
   };
   bot.command(["balans", "balance"], showBalance);
   bot.callbackQuery("balance", async (ctx) => {
@@ -161,12 +166,15 @@ export function createBot({ config, gemini }: BotDeps) {
       "",
       `👥 Jami foydalanuvchilar: <b>${s.totalUsers}</b>`,
       `🆕 Yangi: bugun <b>${s.newToday}</b>, 7 kunda <b>${s.newWeek}</b>`,
-      `🔥 Bugun faol: <b>${s.dau[0]!.users}</b>, 7 kunda faol: <b>${s.wau}</b>`,
+      `🆕 Shu oyda yangi: <b>${s.newMonth}</b>`,
+      `🔥 Faol: bugun <b>${s.dau[0]!.users}</b>, 7 kunda <b>${s.wau}</b>, shu oyda <b>${s.mau}</b>`,
+      `⭐ Faol obunachilar: <b>${s.activeSubscribers}</b>`,
       "",
       "<b>Kunlik faol foydalanuvchilar:</b>",
       ...s.dau.map((d) => `${d.day.slice(5)}: ${d.users}`),
       "",
       `📄 Bugun tayyorlangan: <b>${s.ordersToday.done}</b> ta (xato: ${s.ordersToday.failed})`,
+      `🗓 Shu oyda tayyorlangan: <b>${s.ordersMonth.done}</b> ta (xato: ${s.ordersMonth.failed})`,
       `📦 Jami tayyorlangan: <b>${s.ordersTotal.done}</b> ta (xato: ${s.ordersTotal.failed})`,
       `💰 Bugun sarflangan kredit: <b>${s.creditsSpentToday}</b>`,
       "",
@@ -182,12 +190,33 @@ export function createBot({ config, gemini }: BotDeps) {
   bot.command("users", async (ctx) => {
     if (!isAdmin(ctx)) return;
     const users = await recentUsers(20);
-    const fmt = (d?: Date | null) => (d ? new Date(d.getTime() + 5 * 3600_000).toISOString().slice(5, 16).replace("T", " ") : "—");
-    const lines = users.map(
-      (u) =>
-        `<code>${u.telegramId}</code> ${escapeHtml(u.firstName ?? "")}${u.username ? ` @${escapeHtml(u.username)}` : ""} · ${u.credits} kr · ${fmt(u.lastSeenAt)}`,
-    );
-    await ctx.reply(["👥 <b>Oxirgi faol foydalanuvchilar</b>", "", ...lines].join("\n"), html);
+    const fmt = (d?: Date | null) => (d ? formatTashkent(d).slice(5) : "—");
+    const lines = users.map((u) => {
+      const sub = u.subscriptionUntil && u.subscriptionUntil.getTime() > Date.now() ? ` · ⭐ ${formatTashkent(u.subscriptionUntil).slice(5, 10)} gacha` : "";
+      return `<code>${u.telegramId}</code> ${escapeHtml(u.firstName ?? "")}${u.username ? ` @${escapeHtml(u.username)}` : ""} · ${u.credits} kr${sub} · ${fmt(u.lastSeenAt)}`;
+    });
+    await ctx.reply(["👥 <b>Oxirgi faol foydalanuvchilar</b> (⭐ = obunachi)", "", ...lines].join("\n"), html);
+  });
+
+  // Admin: /obuna <telegramId | @username> [kun] — oylik obuna beradi (kredit ham qo'shiladi)
+  bot.command("obuna", async (ctx) => {
+    if (!isAdmin(ctx)) return;
+    const [ref, rawDays] = ctx.match.trim().split(/\s+/);
+    const days = rawDays ? Number(rawDays) : config.SUBSCRIPTION_DAYS;
+    if (!ref || !Number.isInteger(days) || days <= 0) {
+      return ctx.reply(`Format: /obuna <telegramId | @username> [kun]\nMasalan: /obuna @ali (${config.SUBSCRIPTION_DAYS} kun, ${config.SUBSCRIPTION_CREDITS} kredit)`);
+    }
+    const target = await findUser(ref);
+    if (!target) return ctx.reply("Foydalanuvchi topilmadi. U avval botga /start bosgan bo'lishi kerak.");
+    const credits = Math.round((config.SUBSCRIPTION_CREDITS * days) / config.SUBSCRIPTION_DAYS);
+    const user = await grantSubscription(target.telegramId, days, credits);
+    if (!user?.subscriptionUntil) return ctx.reply("Foydalanuvchi topilmadi");
+    const until = formatTashkent(user.subscriptionUntil).slice(0, 10);
+    const name = escapeHtml(user.firstName ?? String(user.telegramId));
+    await ctx.reply(`⭐ ${name} (<code>${user.telegramId}</code>): obuna ${until} gacha, +${credits} kredit, balans <b>${user.credits}</b>`, html);
+    await ctx.api
+      .sendMessage(user.telegramId, texts.subscriptionGranted(until, credits, user.credits), { ...html, reply_markup: backToMenu() })
+      .catch(() => undefined);
   });
 
   // Admin: /kredit <telegramId | @username> <miqdor> (manfiy miqdor kreditni ayiradi)

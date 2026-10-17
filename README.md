@@ -14,8 +14,9 @@ Slayd, rezyume, kurs ishi, vizitka, taklifnoma, flayer, Excel va Word hujjatlarn
 - Vizitka (90×50 mm, 4 dizayn), Taklifnoma (A5, 4 uslub), Flayer (A4 / Instagram post / story, 4 uslub): HTML/CSS shablon Chromium orqali PNG + PDF qilinadi.
 - Excel: oylik byudjet, 12 oylik biznes prognoz, kredit to'lov jadvali (annuitet/differensial). Barcha hisoblar formulalar bilan, sariq kataklar tahrirlanadi.
 - Admin buyruqlari (faqat `ADMIN_IDS` uchun):
-  - `/stat`: jami foydalanuvchilar, bugungi va 7 kunlik faol foydalanuvchilar, tayyorlangan ishlar, eng ko'p ishlatilgan xizmatlar.
-  - `/users`: oxirgi faol 20 ta foydalanuvchi (ID, username, balans).
+  - `/stat`: jami foydalanuvchilar, bugungi, 7 kunlik va oylik faol foydalanuvchilar, faol obunachilar, tayyorlangan ishlar, eng ko'p ishlatilgan xizmatlar.
+  - `/users`: oxirgi faol 20 ta foydalanuvchi (ID, username, balans, obuna).
+  - `/obuna <telegramId | @username> [kun]`: oylik obuna beradi yoki uzaytiradi va `SUBSCRIPTION_CREDITS` kredit qo'shadi. Foydalanuvchi obuna holatini /balans'da ko'radi.
   - `/kredit <telegramId | @username> <miqdor>`: kredit qo'shish (manfiy son ayiradi). Foydalanuvchiga xabar boradi.
 - Har bir buyurtma `orders` kolleksiyasiga token sarfi bilan yoziladi, shunda real API xarajatini kuzatamiz.
 

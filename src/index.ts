@@ -31,6 +31,7 @@ async function main() {
     { command: "stat", description: "Statistika (admin)" },
     { command: "users", description: "Oxirgi foydalanuvchilar (admin)" },
     { command: "kredit", description: "Kredit qo'shish (admin)" },
+    { command: "obuna", description: "Oylik obuna berish (admin)" },
   ];
   for (const chatId of config.ADMIN_IDS) {
     await bot.api

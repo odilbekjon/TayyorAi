@@ -12,6 +12,16 @@ function startOfDay(daysAgo = 0) {
   return new Date(Date.parse(`${dayKey(daysAgo)}T00:00:00Z`) - TASHKENT_OFFSET_MS);
 }
 
+/** Toshkent vaqti bo'yicha joriy oy boshlanishi (UTC Date). */
+function startOfMonth() {
+  return new Date(Date.parse(`${dayKey().slice(0, 7)}-01T00:00:00Z`) - TASHKENT_OFFSET_MS);
+}
+
+/** Sanani Toshkent vaqtida "YYYY-MM-DD HH:mm" ko'rinishida chiqaradi */
+export function formatTashkent(d: Date) {
+  return new Date(d.getTime() + TASHKENT_OFFSET_MS).toISOString().slice(0, 16).replace("T", " ");
+}
+
 /**
  * Foydalanuvchi faolligini yozadi. Bir kunda bir foydalanuvchi uchun bazaga faqat
  * birinchi marta yoziladi (xotiradagi kesh), keyingi xabarlarda baza yuklanmaydi.
@@ -42,6 +52,11 @@ export interface BotStats {
   totalUsers: number;
   newToday: number;
   newWeek: number;
+  newMonth: number;
+  /** Shu kalendar oyida kamida bir marta kirganlar */
+  mau: number;
+  activeSubscribers: number;
+  ordersMonth: { done: number; failed: number };
   dau: Array<{ day: string; users: number }>;
   wau: number;
   ordersToday: { done: number; failed: number };
@@ -55,12 +70,21 @@ export async function getStats(days = 7): Promise<BotStats> {
   const today = startOfDay(0);
   const weekAgo = startOfDay(days - 1);
   const dayKeys = Array.from({ length: days }, (_, i) => dayKey(i));
+  const monthKey = `${dayKey().slice(0, 7)}-01`;
+  const monthStart = startOfMonth();
 
-  const [totalUsers, newToday, newWeek, dauRows, wauRows, ordersToday, ordersTotal, topServices, tokens] =
+  const [
+    totalUsers, newToday, newWeek, newMonth, mauRows, activeSubscribers, ordersMonth,
+    dauRows, wauRows, ordersToday, ordersTotal, topServices, tokens,
+  ] =
     await Promise.all([
       User.countDocuments(),
       User.countDocuments({ createdAt: { $gte: today } }),
       User.countDocuments({ createdAt: { $gte: weekAgo } }),
+      User.countDocuments({ createdAt: { $gte: monthStart } }),
+      Activity.distinct("telegramId", { day: { $gte: monthKey } }),
+      User.countDocuments({ subscriptionUntil: { $gt: new Date() } }),
+      countOrders({ createdAt: { $gte: monthStart } }),
       Activity.aggregate<{ _id: string; users: number }>([
         { $match: { day: { $in: dayKeys } } },
         { $group: { _id: "$day", users: { $sum: 1 } } },
@@ -85,6 +109,10 @@ export async function getStats(days = 7): Promise<BotStats> {
     totalUsers,
     newToday,
     newWeek,
+    newMonth,
+    mau: mauRows.length,
+    activeSubscribers,
+    ordersMonth: { done: ordersMonth.done, failed: ordersMonth.failed },
     dau: dayKeys.map((day) => ({ day, users: dauMap.get(day) ?? 0 })),
     wau: wauRows.length,
     ordersToday: { done: ordersToday.done, failed: ordersToday.failed },
@@ -106,7 +134,7 @@ async function countOrders(match: Record<string, unknown>) {
 
 /** Eng oxirgi faol foydalanuvchilar (admin uchun: ID'ni topib kredit qo'shish oson bo'lsin) */
 export async function recentUsers(limit = 15) {
-  return User.find({}, { telegramId: 1, firstName: 1, username: 1, credits: 1, lastSeenAt: 1, createdAt: 1 })
+  return User.find({}, { telegramId: 1, firstName: 1, username: 1, credits: 1, lastSeenAt: 1, createdAt: 1, subscriptionUntil: 1 })
     .sort({ lastSeenAt: -1, createdAt: -1 })
     .limit(limit)
     .lean();

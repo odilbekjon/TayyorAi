@@ -19,6 +19,8 @@ const UserSchema = new Schema(
     busy: { type: Boolean, default: false },
     /** Oxirgi marta botdan foydalangan vaqti */
     lastSeenAt: Date,
+    /** Oylik obuna shu vaqtgacha faol (bo'lmasa obuna yo'q) */
+    subscriptionUntil: Date,
     wizard: { type: WizardSchema, default: null },
   },
   { timestamps: true },
