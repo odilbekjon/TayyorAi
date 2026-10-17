@@ -1,4 +1,4 @@
-import { safeFilename } from "../../lib/docx.js";
+import { safeFilename } from "../../lib/files.js";
 import { escapeHtml } from "../../lib/html.js";
 import { LANGUAGE_OPTIONS, type ServiceDef } from "../types.js";
 import { writeResume } from "./content.js";

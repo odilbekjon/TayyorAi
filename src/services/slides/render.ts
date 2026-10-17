@@ -10,8 +10,8 @@ export interface RenderOptions {
   theme: SlideTheme;
   author?: string;
   language: string;
-  /** Har bir slayd uchun base64 rasm (index bo'yicha), bo'lmasa undefined */
-  images: Array<string | undefined>;
+  /** Har bir slayd uchun rasm (index bo'yicha): pptxgenjs formatidagi base64 va manba yozuvi */
+  images: Array<{ data: string; ratio: number; credit: string } | undefined>;
 }
 
 const THANKS: Record<string, string> = {
@@ -81,9 +81,13 @@ export async function renderDeck(deck: Deck, opts: RenderOptions): Promise<Buffe
 
     if (image) {
       slide.addShape("rect", { x: 8.05, y: 1.75, w: 4.6, h: 4.9, fill: { color: theme.surface } });
-      slide.addImage({
-        data: image, x: 8.2, y: 1.9, w: 4.3, h: 4.6,
-        sizing: { type: "cover", w: 4.3, h: 4.6 },
+      // pptxgenjs "cover" uchun w/h rasmning o'z nisbatida bo'lishi kerak, aks holda rasm cho'ziladi
+      const box = { w: 4.3, h: 4.6 };
+      const size = image.ratio > box.w / box.h ? { w: box.h * image.ratio, h: box.h } : { w: box.w, h: box.w / image.ratio };
+      slide.addImage({ data: image.data, x: 8.2, y: 1.9, ...size, sizing: { type: "cover", ...box } });
+      slide.addText(image.credit, {
+        x: 8.05, y: 6.62, w: 4.6, h: 0.28,
+        fontFace: theme.bodyFont, fontSize: 8, color: theme.text, italic: true, align: "right",
       });
     }
 

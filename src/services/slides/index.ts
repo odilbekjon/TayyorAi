@@ -1,8 +1,9 @@
+import { safeFilename } from "../../lib/files.js";
 import { escapeHtml } from "../../lib/html.js";
-import { findPhoto } from "../../lib/pexels.js";
+import { findPhoto } from "../../lib/photos.js";
 import { LANGUAGE_OPTIONS, type ServiceDef } from "../types.js";
 import { writeDeck } from "./content.js";
-import { renderDeck } from "./render.js";
+import { renderDeck, type RenderOptions } from "./render.js";
 import { THEMES, getTheme } from "./themes.js";
 
 export const slidesService: ServiceDef = {
@@ -66,10 +67,19 @@ export const slidesService: ServiceDef = {
   async generate(answers, deps) {
     const { data: deck, usage } = await writeDeck(deps.gemini, answers);
 
-    let images: Array<string | undefined> = [];
-    if (answers.images === "photo" && deps.pexelsKey) {
-      const key = deps.pexelsKey;
-      images = await Promise.all(deck.slides.map(async (s) => (await findPhoto(key, s.imageQuery)) ?? undefined));
+    const images: RenderOptions["images"] = [];
+    if (answers.images === "photo") {
+      // Ketma-ket: bir xil rasm ikki slaydga tushmasligi uchun
+      const used = new Set<string>();
+      for (const [i, s] of deck.slides.entries()) {
+        await deps.progress?.(`🖼 Rasmlar qidirilmoqda: ${i + 1}/${deck.slides.length}`);
+        const photo = await findPhoto(s.imageQuery, { pexelsKey: deps.pexelsKey, used });
+        images.push(
+          photo
+            ? { data: `${photo.mime};base64,${photo.buffer.toString("base64")}`, ratio: photo.width / photo.height, credit: photo.credit }
+            : undefined,
+        );
+      }
     }
 
     const file = await renderDeck(deck, {
@@ -81,13 +91,9 @@ export const slidesService: ServiceDef = {
 
     return {
       file,
-      filename: `${safeFilename(deck.title)}.pptx`,
+      filename: `${safeFilename(deck.title, "taqdimot")}.pptx`,
       caption: `✅ Taqdimot tayyor: <b>${escapeHtml(deck.title)}</b>\n${deck.slides.length + 2} ta slayd`,
       usage: { ...usage, images: images.filter(Boolean).length },
     };
   },
 };
-
-function safeFilename(s: string) {
-  return s.replace(/[\\/:*?"<>|]+/g, "").trim().slice(0, 60) || "taqdimot";
-}

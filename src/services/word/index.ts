@@ -1,6 +1,7 @@
 import { AlignmentType } from "docx";
 import { z } from "zod";
-import { body, buildDocx, empty, para, safeFilename } from "../../lib/docx.js";
+import { body, buildDocx, empty, para } from "../../lib/docx.js";
+import { safeFilename } from "../../lib/files.js";
 import { escapeHtml } from "../../lib/html.js";
 import { LANGUAGE_OPTIONS, LANGUAGE_PROMPT, type ServiceDef } from "../types.js";
 

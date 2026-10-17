@@ -76,7 +76,3 @@ export async function buildDocx(
   });
   return Packer.toBuffer(doc);
 }
-
-export function safeFilename(s: string, fallback: string) {
-  return s.replace(/[\\/:*?"<>|]+/g, "").trim().slice(0, 60) || fallback;
-}
