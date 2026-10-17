@@ -23,8 +23,8 @@ export const texts = {
   notEnoughCredits: (need: number, have: number) =>
     `😔 Kredit yetarli emas. Kerak: <b>${need}</b>, sizda: <b>${have}</b>.\n\nObuna tez orada ishga tushadi.`,
   busy: "⏳ Oldingi ishingiz hali tayyorlanmoqda. Iltimos, biroz kuting.",
-  working: (queued: number) =>
-    `⏳ Tayyorlanmoqda... Bu odatda 20-60 soniya oladi.` + (queued > 0 ? `\nNavbatda oldingizda: ${queued} ta ish.` : ""),
+  working: (eta: string, queued: number) =>
+    `⏳ Tayyorlanmoqda... Bu odatda ${eta} oladi.` + (queued > 0 ? `\nNavbatda oldingizda: ${queued} ta ish.` : ""),
   aiBusy: "😔 AI xizmati hozir juda band. Bir necha daqiqadan keyin qayta urinib ko'ring. Kredit yechilmadi.",
   failed: "😔 Xatolik yuz berdi, fayl tayyorlanmadi. Kredit yechilmadi. Iltimos, qayta urinib ko'ring.",
   summaryTitle: "📋 <b>Tekshiring:</b>",

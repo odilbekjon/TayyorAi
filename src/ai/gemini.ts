@@ -6,6 +6,13 @@ export interface AiUsage {
   outputTokens: number;
 }
 
+const BUSY_RETRY_DELAYS_MS = [10_000, 20_000, 40_000];
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+export function addUsage(a: AiUsage, b: AiUsage): AiUsage {
+  return { inputTokens: a.inputTokens + b.inputTokens, outputTokens: a.outputTokens + b.outputTokens };
+}
+
 export class AiBusyError extends Error {
   constructor() {
     super("AI xizmati hozir band (so'rovlar limiti)");
@@ -47,6 +54,7 @@ export class GeminiClient {
   /**
    * Javobni JSON schema bo'yicha oladi va zod bilan tekshiradi.
    * Model ba'zan noto'g'ri tuzilma qaytaradi, shuning uchun bir marta qayta urinadi.
+   * Bepul tarifda daqiqalik limit tez tugaydi: 429/503 bo'lsa biroz kutib qayta so'raydi.
    */
   async generateJson<S extends z.ZodType>(
     schema: S,
@@ -56,8 +64,10 @@ export class GeminiClient {
     // Gemini "$schema" kalitini qabul qilmasligi mumkin, shuning uchun olib tashlaymiz
     const { $schema: _ignored, ...jsonSchema } = z.toJSONSchema(schema);
     let lastError: unknown;
+    let parseFailures = 0;
+    let busyRetries = 0;
 
-    for (let attempt = 0; attempt < 2; attempt++) {
+    while (parseFailures < 2) {
       try {
         const res = await this.ai.models.generateContent({
           model: this.model,
@@ -77,9 +87,15 @@ export class GeminiClient {
         const parsed = schema.safeParse(JSON.parse(res.text ?? ""));
         if (parsed.success) return { data: parsed.data, usage };
         lastError = parsed.error;
+        parseFailures++;
       } catch (err) {
-        if (err instanceof ApiError && (err.status === 429 || err.status === 503)) throw new AiBusyError();
+        if (err instanceof ApiError && (err.status === 429 || err.status === 503)) {
+          if (busyRetries >= BUSY_RETRY_DELAYS_MS.length) throw new AiBusyError();
+          await sleep(BUSY_RETRY_DELAYS_MS[busyRetries++]!);
+          continue;
+        }
         lastError = err;
+        parseFailures++;
       }
     }
     throw lastError instanceof Error ? lastError : new Error("AI javobi noto'g'ri formatda");
