@@ -76,6 +76,8 @@ export function createBot({ config, gemini }: BotDeps) {
       const result = await limiter.run(() =>
         service.generate!(answers, { gemini, pexelsKey: config.PEXELS_API_KEY, progress: onProgress }),
       );
+      if (result.preview) await ctx.replyWithPhoto(new InputFile(result.preview, "preview.png"));
+      for (const extra of result.extra ?? []) await ctx.replyWithDocument(new InputFile(extra.file, extra.filename));
       await ctx.replyWithDocument(new InputFile(result.file, result.filename), {
         caption: result.caption,
         ...html,

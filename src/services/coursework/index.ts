@@ -1,5 +1,6 @@
 import { AlignmentType, Paragraph } from "docx";
-import { body, buildDocx, empty, heading, pageNumberFooter, para, safeFilename } from "../../lib/docx.js";
+import { body, buildDocx, empty, heading, pageNumberFooter, para } from "../../lib/docx.js";
+import { safeFilename } from "../../lib/files.js";
 import { escapeHtml } from "../../lib/html.js";
 import { LANGUAGE_OPTIONS, type ServiceDef } from "../types.js";
 import { WORK_KINDS, workKind, writeCoursework, type CourseworkText, type WorkKind } from "./content.js";

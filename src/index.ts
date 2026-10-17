@@ -3,6 +3,7 @@ import { GeminiClient } from "./ai/gemini.js";
 import { createBot } from "./bot/bot.js";
 import { loadConfig } from "./config.js";
 import { releaseStaleLocks } from "./db/users.js";
+import { closeBrowser } from "./lib/html-render.js";
 
 async function main() {
   const config = loadConfig();
@@ -26,6 +27,7 @@ async function main() {
 
   const shutdown = async () => {
     await bot.stop();
+    await closeBrowser();
     await mongoose.disconnect();
     process.exit(0);
   };

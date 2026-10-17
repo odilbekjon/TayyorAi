@@ -31,6 +31,10 @@ export interface GenerateResult {
   file: Buffer;
   filename: string;
   caption: string;
+  /** Chatda rasm sifatida ko'rinadigan oldindan ko'rish (vizitka, flayer) */
+  preview?: Buffer;
+  /** Asosiy fayldan keyin yuboriladigan qo'shimcha fayllar (masalan, PNG) */
+  extra?: Array<{ file: Buffer; filename: string }>;
   usage: { inputTokens: number; outputTokens: number; images: number };
 }
 
