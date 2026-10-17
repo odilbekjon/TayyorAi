@@ -12,6 +12,8 @@ async function main() {
   console.log("✅ MongoDB ulandi");
 
   const gemini = new GeminiClient(config.GEMINI_API_KEY, config.GEMINI_MODEL);
+  await gemini.checkModel();
+  console.log(`✅ Gemini modeli: ${config.GEMINI_MODEL}`);
   const bot = createBot({ config, gemini });
 
   await bot.api.setMyCommands([
