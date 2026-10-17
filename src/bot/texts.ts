@@ -22,6 +22,8 @@ export const texts = {
   tooLong: (n: number) => `Juda uzun. Ko'pi bilan ${n} ta belgi yozing.`,
   notEnoughCredits: (need: number, have: number) =>
     `😔 Kredit yetarli emas. Kerak: <b>${need}</b>, sizda: <b>${have}</b>.\n\nObuna tez orada ishga tushadi.`,
+  creditsAdded: (amount: number, credits: number) =>
+    `🎉 Hisobingizga <b>${amount} kredit</b> qo'shildi. Balansingiz: <b>${credits} kredit</b>.`,
   busy: "⏳ Oldingi ishingiz hali tayyorlanmoqda. Iltimos, biroz kuting.",
   working: (eta: string, queued: number) =>
     `⏳ Tayyorlanmoqda... Bu odatda ${eta} oladi.` + (queued > 0 ? `\nNavbatda oldingizda: ${queued} ta ish.` : ""),

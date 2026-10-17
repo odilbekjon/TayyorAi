@@ -13,7 +13,10 @@ Slayd, rezyume, kurs ishi, vizitka, taklifnoma, flayer, Excel va Word hujjatlarn
 - Kurs ishi: mustaqil ish (15 kredit), referat (20), kurs ishi (25). Avval reja, keyin har bir bo'lim alohida yoziladi. Titul varag'i, reja, kirish, boblar, xulosa, adabiyotlar va sahifa raqamlari bilan `.docx` (Times New Roman 14, 1.5 interval).
 - Vizitka (90×50 mm, 4 dizayn), Taklifnoma (A5, 4 uslub), Flayer (A4 / Instagram post / story, 4 uslub): HTML/CSS shablon Chromium orqali PNG + PDF qilinadi.
 - Excel: oylik byudjet, 12 oylik biznes prognoz, kredit to'lov jadvali (annuitet/differensial). Barcha hisoblar formulalar bilan, sariq kataklar tahrirlanadi.
-- Admin buyrug'i: `/kredit <telegramId> <miqdor>` (faqat `ADMIN_IDS` uchun).
+- Admin buyruqlari (faqat `ADMIN_IDS` uchun):
+  - `/stat`: jami foydalanuvchilar, bugungi va 7 kunlik faol foydalanuvchilar, tayyorlangan ishlar, eng ko'p ishlatilgan xizmatlar.
+  - `/users`: oxirgi faol 20 ta foydalanuvchi (ID, username, balans).
+  - `/kredit <telegramId | @username> <miqdor>`: kredit qo'shish (manfiy son ayiradi). Foydalanuvchiga xabar boradi.
 - Har bir buyurtma `orders` kolleksiyasiga token sarfi bilan yoziladi, shunda real API xarajatini kuzatamiz.
 
 ## Ishga tushirish
