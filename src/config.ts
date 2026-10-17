@@ -7,6 +7,10 @@ const EnvSchema = z.object({
   MONGODB_URI: z.string().startsWith("mongodb", "MONGODB_URI noto'g'ri"),
   PEXELS_API_KEY: z.string().optional(),
   FREE_CREDITS: z.coerce.number().int().min(0).default(20),
+  /** Oylik obuna: narxi (so'm), beriladigan kredit va muddati (kun) */
+  SUBSCRIPTION_PRICE: z.coerce.number().int().min(0).default(10000),
+  SUBSCRIPTION_CREDITS: z.coerce.number().int().min(0).default(100),
+  SUBSCRIPTION_DAYS: z.coerce.number().int().min(1).default(30),
   ADMIN_IDS: z
     .string()
     .optional()

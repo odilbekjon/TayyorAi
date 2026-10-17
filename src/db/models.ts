@@ -17,6 +17,10 @@ const UserSchema = new Schema(
     credits: { type: Number, required: true, default: 0, min: 0 },
     /** Bir vaqtda faqat bitta ish bajarilishi uchun */
     busy: { type: Boolean, default: false },
+    /** Oxirgi marta botdan foydalangan vaqti */
+    lastSeenAt: Date,
+    /** Oylik obuna shu vaqtgacha faol (bo'lmasa obuna yo'q) */
+    subscriptionUntil: Date,
     wizard: { type: WizardSchema, default: null },
   },
   { timestamps: true },
@@ -41,3 +45,15 @@ const OrderSchema = new Schema(
 );
 
 export const Order = model("Order", OrderSchema);
+
+/** Har kuni bir marta yoziladi: kunlik faol foydalanuvchilarni (DAU) sanash uchun */
+const ActivitySchema = new Schema({
+  /** Toshkent vaqti bo'yicha kun, masalan "2026-10-17" */
+  day: { type: String, required: true },
+  telegramId: { type: Number, required: true },
+  /** Shu kuni nechta xabar/tugma bosgan */
+  hits: { type: Number, default: 0 },
+});
+ActivitySchema.index({ day: 1, telegramId: 1 }, { unique: true });
+
+export const Activity = model("Activity", ActivitySchema);

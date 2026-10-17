@@ -6,9 +6,14 @@ export const texts = {
     `Men <b>TayyorAI</b>, sizga slayd, rezyume, kurs ishi, vizitka, taklifnoma va boshqa ishlarni bir necha daqiqada tayyorlab beraman.\n\n` +
     `🎁 Sizda <b>${credits} kredit</b> bor. Kerakli xizmatni tanlang:`,
   menu: "Kerakli xizmatni tanlang:",
-  balance: (credits: number, prices: string) =>
-    `💰 Balansingiz: <b>${credits} kredit</b>\n\nNarxlar:\n${prices}\n\n` +
-    `💳 Obuna (10 000 so'm = 100 kredit) tez orada ishga tushadi.`,
+  balance: (credits: number, prices: string, subscription: string) =>
+    `💰 Balansingiz: <b>${credits} kredit</b>\n${subscription}\n\nNarxlar:\n${prices}`,
+  subscriptionActive: (until: string, daysLeft: number) =>
+    `⭐ Oylik obuna: <b>faol</b>, ${until} gacha (${daysLeft} kun qoldi)`,
+  subscriptionNone: (price: number, credits: number, days: number) =>
+    `⭐ Oylik obuna: <b>yo'q</b>\n💳 Obuna: ${price.toLocaleString("ru-RU")} so'm = ${credits} kredit, ${days} kun. Ulash uchun admin bilan bog'laning.`,
+  subscriptionGranted: (until: string, credits: number, total: number) =>
+    `⭐ Oylik obunangiz faollashdi! ${until} gacha amal qiladi.\n🎁 Hisobingizga <b>${credits} kredit</b> qo'shildi, balans: <b>${total} kredit</b>.`,
   help:
     `ℹ️ <b>Qanday ishlaydi?</b>\n\n` +
     `1. Menyudan xizmatni tanlang.\n2. Bot bergan savollarga javob bering.\n3. Tasdiqlang va tayyor faylni oling.\n\n` +
@@ -21,7 +26,9 @@ export const texts = {
   tooShort: (n: number) => `Juda qisqa. Kamida ${n} ta belgi yozing.`,
   tooLong: (n: number) => `Juda uzun. Ko'pi bilan ${n} ta belgi yozing.`,
   notEnoughCredits: (need: number, have: number) =>
-    `😔 Kredit yetarli emas. Kerak: <b>${need}</b>, sizda: <b>${have}</b>.\n\nObuna tez orada ishga tushadi.`,
+    `😔 Kredit yetarli emas. Kerak: <b>${need}</b>, sizda: <b>${have}</b>.\n\nKredit olish uchun /balans bo'limidagi obunani ko'ring.`,
+  creditsAdded: (amount: number, credits: number) =>
+    `🎉 Hisobingizga <b>${amount} kredit</b> qo'shildi. Balansingiz: <b>${credits} kredit</b>.`,
   busy: "⏳ Oldingi ishingiz hali tayyorlanmoqda. Iltimos, biroz kuting.",
   working: (eta: string, queued: number) =>
     `⏳ Tayyorlanmoqda... Bu odatda ${eta} oladi.` + (queued > 0 ? `\nNavbatda oldingizda: ${queued} ta ish.` : ""),

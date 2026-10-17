@@ -34,3 +34,23 @@ export async function unlock(telegramId: number, chargeCredits: number) {
 export async function releaseStaleLocks() {
   await User.updateMany({ busy: true }, { $set: { busy: false } });
 }
+
+/**
+ * Oylik obunani beradi yoki uzaytiradi: muddat hozirgi tugash sanasidan (yoki bugundan)
+ * `days` kunga suriladi va `credits` kredit qo'shiladi.
+ */
+export async function grantSubscription(telegramId: number, days: number, credits: number) {
+  const ms = days * 86_400_000;
+  return User.findOneAndUpdate(
+    { telegramId },
+    [
+      {
+        $set: {
+          subscriptionUntil: { $add: [{ $max: ["$$NOW", { $ifNull: ["$subscriptionUntil", "$$NOW"] }] }, ms] },
+          credits: { $add: ["$credits", credits] },
+        },
+      },
+    ],
+    { returnDocument: "after", updatePipeline: true },
+  );
+}
