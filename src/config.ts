@@ -10,7 +10,7 @@ const EnvSchema = z.object({
   FREE_CREDITS: z.coerce.number().int().min(0).default(20),
   /** Oylik obuna: narxi (so'm), beriladigan kredit va muddati (kun) */
   SUBSCRIPTION_PRICE: z.coerce.number().int().min(0).default(10000),
-  SUBSCRIPTION_CREDITS: z.coerce.number().int().min(0).default(100),
+  SUBSCRIPTION_CREDITS: z.coerce.number().int().min(0).default(50),
   SUBSCRIPTION_DAYS: z.coerce.number().int().min(1).default(30),
   /** To'lov qabul qilinadigan karta raqami va egasi (repoga yozilmaydi, faqat serverda) */
   PAYMENT_CARD: z.string().optional(),
