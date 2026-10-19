@@ -14,12 +14,8 @@ const EnvSchema = z.object({
   ADMIN_IDS: z
     .string()
     .optional()
-    .transform((v) =>
-      (v ?? "")
-        .split(",")
-        .map((s) => Number(s.trim()))
-        .filter((n) => Number.isInteger(n) && n > 0),
-    ),
+    // Faqat raqamlarni olamiz: qo'shtirnoq, bo'sh joy yoki ";" bilan yozilsa ham ishlaydi
+    .transform((v) => (v?.match(/\d+/g) ?? []).map(Number).filter((n) => Number.isSafeInteger(n) && n > 0)),
 });
 
 export type Config = z.infer<typeof EnvSchema>;
