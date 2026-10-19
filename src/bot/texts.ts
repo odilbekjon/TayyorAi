@@ -1,10 +1,13 @@
 import { escapeHtml } from "../lib/html.js";
 
 export const texts = {
-  welcome: (name: string, credits: number) =>
+  welcome: (name: string, credits: number, subscription: string) =>
     `Assalomu alaykum, <b>${escapeHtml(name)}</b>! 👋\n\n` +
     `Men <b>TayyorAI</b>, sizga slayd, rezyume, kurs ishi, vizitka, taklifnoma va boshqa ishlarni bir necha daqiqada tayyorlab beraman.\n\n` +
-    `🎁 Sizda <b>${credits} kredit</b> bor. Kerakli xizmatni tanlang:`,
+    `💰 Balans: <b>${credits} kredit</b>\n${subscription}\n\nKerakli xizmatni tanlang:`,
+  notAdmin: (id: number) =>
+    `⛔ Bu buyruq faqat admin uchun.\nSizning Telegram ID: <code>${id}</code>\n\n` +
+    `Admin bo'lish uchun shu raqamni serverdagi ADMIN_IDS sozlamasiga qo'shing.`,
   menu: "Kerakli xizmatni tanlang:",
   balance: (credits: number, prices: string, subscription: string) =>
     `💰 Balansingiz: <b>${credits} kredit</b>\n${subscription}\n\nNarxlar:\n${prices}`,
