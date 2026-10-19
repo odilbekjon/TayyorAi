@@ -1,16 +1,16 @@
 import { escapeHtml } from "../lib/html.js";
 
 export const texts = {
-  welcome: (name: string, credits: number, subscription: string) =>
+  welcome: (name: string, credits: string, subscription: string) =>
     `Assalomu alaykum, <b>${escapeHtml(name)}</b>! 👋\n\n` +
     `Men <b>TayyorAI</b>, sizga slayd, rezyume, kurs ishi, vizitka, taklifnoma va boshqa ishlarni bir necha daqiqada tayyorlab beraman.\n\n` +
-    `💰 Balans: <b>${credits} kredit</b>\n${subscription}\n\nKerakli xizmatni tanlang:`,
+    `💰 Balans: <b>${credits}</b>\n${subscription}\n\nKerakli xizmatni tanlang:`,
   notAdmin: (id: number) =>
     `⛔ Bu buyruq faqat admin uchun.\nSizning Telegram ID: <code>${id}</code>\n\n` +
     `Admin bo'lish uchun shu raqamni serverdagi ADMIN_IDS sozlamasiga qo'shing.`,
   menu: "Kerakli xizmatni tanlang:",
-  balance: (credits: number, prices: string, subscription: string) =>
-    `💰 Balansingiz: <b>${credits} kredit</b>\n${subscription}\n\nNarxlar:\n${prices}`,
+  balance: (credits: string, prices: string, subscription: string) =>
+    `💰 Balansingiz: <b>${credits}</b>\n${subscription}\n\nNarxlar:\n${prices}`,
   subscriptionActive: (until: string, daysLeft: number) =>
     `⭐ Oylik obuna: <b>faol</b>, ${until} gacha (${daysLeft} kun qoldi)`,
   subscriptionNone: (price: number, credits: number, days: number) =>
@@ -52,4 +52,6 @@ export const texts = {
   failed: "😔 Xatolik yuz berdi, fayl tayyorlanmadi. Kredit yechilmadi. Iltimos, qayta urinib ko'ring.",
   summaryTitle: "📋 <b>Tekshiring:</b>",
   summaryCost: (cost: number, credits: number) => `\n💰 Narxi: <b>${cost} kredit</b> (balansingiz: ${credits})`,
+  summaryCostAdmin: (cost: number) => `\n💰 Narxi: ${cost} kredit, siz admin bo'lganingiz uchun <b>bepul</b>`,
+  adminCredits: "♾ Cheksiz (admin)",
 };
