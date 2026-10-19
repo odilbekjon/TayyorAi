@@ -21,13 +21,13 @@ Yangi akkauntga bir martalik $5 sinov krediti beriladi. To'lov uchun Visa/Master
    GEMINI_API_KEY=...
    GEMINI_MODEL=gemini-3.8-flash
    MONGODB_URI=mongodb+srv://...
-   PEXELS_API_KEY=...
+   PIXABAY_API_KEY=...   # ixtiyoriy, bepul: pixabay.com/api/docs
    FREE_CREDITS=20
    ADMIN_IDS=...
    ```
    *Update Variables* → Railway botni qayta deploy qiladi.
 5. **Kompyuteringizdagi botni to'xtating** (`npm run dev` oynasida `Ctrl+C`). Bir token bilan ikkita bot ishlasa, Telegram `409 Conflict` xatosini beradi.
-6. *Deployments* → oxirgi deploy → *View Logs*. `✅ MongoDB ulandi` va `🤖 @... ishga tushdi` chiqsa, tayyor. Telegram'da `/start` bosib tekshiring.
+6. *Deployments* → oxirgi deploy → *View Logs*. `✅ MongoDB ulandi` va `🤖 @... ishga tushdi` chiqsa, tayyor. `Rasm manbasi ...` qatorlari qaysi rasm manbasi ishlayotganini ko'rsatadi. Telegram'da `/start` bosib tekshiring.
 
 ## Keyin
 

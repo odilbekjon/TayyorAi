@@ -73,7 +73,7 @@ export const slidesService: ServiceDef = {
       const used = new Set<string>();
       for (const [i, s] of deck.slides.entries()) {
         await deps.progress?.(`🖼 Rasmlar qidirilmoqda: ${i + 1}/${deck.slides.length}`);
-        const photo = await findPhoto(s.imageQuery, { pexelsKey: deps.pexelsKey, used });
+        const photo = await findPhoto(s.imageQuery, { keys: deps.photoKeys, used });
         images.push(
           photo
             ? { data: `${photo.mime};base64,${photo.buffer.toString("base64")}`, ratio: photo.width / photo.height, credit: photo.credit }
@@ -92,7 +92,9 @@ export const slidesService: ServiceDef = {
     return {
       file,
       filename: `${safeFilename(deck.title, "taqdimot")}.pptx`,
-      caption: `✅ Taqdimot tayyor: <b>${escapeHtml(deck.title)}</b>\n${deck.slides.length + 2} ta slayd`,
+      caption:
+        `✅ Taqdimot tayyor: <b>${escapeHtml(deck.title)}</b>\n${deck.slides.length + 2} ta slayd` +
+        (answers.images === "photo" ? `\n🖼 Rasm: ${images.filter(Boolean).length}/${deck.slides.length} slaydda` : ""),
       usage: { ...usage, images: images.filter(Boolean).length },
     };
   },

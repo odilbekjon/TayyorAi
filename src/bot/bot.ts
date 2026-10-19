@@ -6,6 +6,7 @@ import { createActivityTracker, findUser, formatTashkent, getStats, recentUsers 
 import { ensureUser, grantSubscription, tryLock, unlock } from "../db/users.js";
 import { escapeHtml } from "../lib/html.js";
 import { Limiter } from "../lib/limiter.js";
+import { checkPhotoProviders, type PhotoKeys } from "../lib/photos.js";
 import { SERVICES, getService } from "../services/registry.js";
 import { costOf, type Answers, type ServiceDef } from "../services/types.js";
 import { backToMenu, confirmKeyboard, mainMenu, stepKeyboard } from "./keyboards.js";
@@ -18,6 +19,7 @@ interface BotDeps {
 
 export function createBot({ config, gemini }: BotDeps) {
   const bot = new Bot(config.BOT_TOKEN);
+  const photoKeys: PhotoKeys = { pexels: config.PEXELS_API_KEY, pixabay: config.PIXABAY_API_KEY };
   // Bepul Gemini tarifi uchun: bir vaqtda 2 ta ish
   const limiter = new Limiter(2);
 
@@ -75,7 +77,7 @@ export function createBot({ config, gemini }: BotDeps) {
     };
     try {
       const result = await limiter.run(() =>
-        service.generate!(answers, { gemini, pexelsKey: config.PEXELS_API_KEY, progress: onProgress }),
+        service.generate!(answers, { gemini, photoKeys, progress: onProgress }),
       );
       if (result.preview) await ctx.replyWithPhoto(new InputFile(result.preview, "preview.png"));
       for (const extra of result.extra ?? []) await ctx.replyWithDocument(new InputFile(extra.file, extra.filename));
@@ -184,6 +186,15 @@ export function createBot({ config, gemini }: BotDeps) {
       `🔢 7 kunlik token: ${s.tokensWeek.input.toLocaleString("en-US")} kirish / ${s.tokensWeek.output.toLocaleString("en-US")} chiqish`,
     ];
     await ctx.reply(lines.join("\n"), html);
+  });
+
+  // Admin: /rasm — rasm manbalari serverdan ishlayaptimi
+  bot.command("rasm", async (ctx) => {
+    if (!isAdmin(ctx)) return;
+    await ctx.reply("🖼 Rasm manbalari tekshirilmoqda...");
+    const results = await checkPhotoProviders(photoKeys);
+    const lines = results.map((r) => `${r.ok ? "✅" : "❌"} <b>${r.name}</b>: ${escapeHtml(r.detail)}`);
+    await ctx.reply(["🖼 <b>Rasm manbalari</b>", "", ...lines].join("\n"), html);
   });
 
   // Admin: /users — oxirgi faol foydalanuvchilar ro'yxati (ID'ni bilish uchun)

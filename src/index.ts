@@ -4,6 +4,7 @@ import { createBot } from "./bot/bot.js";
 import { loadConfig } from "./config.js";
 import { releaseStaleLocks } from "./db/users.js";
 import { closeBrowser } from "./lib/html-render.js";
+import { checkPhotoProviders } from "./lib/photos.js";
 
 async function main() {
   const config = loadConfig();
@@ -16,6 +17,11 @@ async function main() {
   await gemini.checkModel();
   console.log(`✅ Gemini modeli: ${config.GEMINI_MODEL}`);
   const bot = createBot({ config, gemini });
+
+  // Rasm manbalari serverdan ochiladimi: natija loglarda ko'rinadi (botni kutdirmaydi)
+  void checkPhotoProviders({ pexels: config.PEXELS_API_KEY, pixabay: config.PIXABAY_API_KEY }).then((results) => {
+    for (const r of results) console.log(`${r.ok ? "✅" : "⚠️"} Rasm manbasi ${r.name}: ${r.detail}`);
+  });
 
   const commands = [
     { command: "start", description: "Boshlash" },
@@ -32,6 +38,7 @@ async function main() {
     { command: "users", description: "Oxirgi foydalanuvchilar (admin)" },
     { command: "kredit", description: "Kredit qo'shish (admin)" },
     { command: "obuna", description: "Oylik obuna berish (admin)" },
+    { command: "rasm", description: "Rasm manbalarini tekshirish (admin)" },
   ];
   for (const chatId of config.ADMIN_IDS) {
     await bot.api

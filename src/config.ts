@@ -6,6 +6,7 @@ const EnvSchema = z.object({
   GEMINI_MODEL: z.string().default("gemini-3.8-flash"),
   MONGODB_URI: z.string().startsWith("mongodb", "MONGODB_URI noto'g'ri"),
   PEXELS_API_KEY: z.string().optional(),
+  PIXABAY_API_KEY: z.string().optional(),
   FREE_CREDITS: z.coerce.number().int().min(0).default(20),
   /** Oylik obuna: narxi (so'm), beriladigan kredit va muddati (kun) */
   SUBSCRIPTION_PRICE: z.coerce.number().int().min(0).default(10000),
