@@ -37,6 +37,10 @@ export function createBot({ config, gemini }: BotDeps) {
     return false;
   }
 
+  /** Adminlar uchun xizmatlar bepul: kredit yechilmaydi */
+  const priceFor = (ctx: Context, service: ServiceDef, answers: Answers) => (isAdmin(ctx) ? 0 : costOf(service, answers));
+  const creditsLabel = (ctx: Context, credits: number) => (isAdmin(ctx) ? texts.adminCredits : `${credits} kredit`);
+
   async function showMenu(ctx: Context, text: string) {
     await ctx.reply(text, { ...html, reply_markup: mainMenu(isAdmin(ctx)) });
   }
@@ -60,7 +64,7 @@ export function createBot({ config, gemini }: BotDeps) {
         const label = s.options?.find((o) => o.value === value)?.label ?? value;
         return `• ${escapeHtml(label)}`;
       });
-    const text = [texts.summaryTitle, service.title, "", ...lines, texts.summaryCost(costOf(service, answers), credits)].join("\n");
+    const text = [texts.summaryTitle, service.title, "", ...lines, (isAdmin(ctx) ? texts.summaryCostAdmin(costOf(service, answers)) : texts.summaryCost(costOf(service, answers), credits))].join("\n");
     await ctx.reply(text, { ...html, reply_markup: confirmKeyboard() });
   }
 
@@ -132,7 +136,7 @@ export function createBot({ config, gemini }: BotDeps) {
   bot.command("start", async (ctx) => {
     const user = await ensureUser(ctx.from!, config.FREE_CREDITS);
     await User.updateOne({ telegramId: user.telegramId, busy: false }, { $set: { wizard: null } });
-    await ctx.reply(texts.welcome(ctx.from!.first_name, user.credits, subscriptionLine(user.subscriptionUntil)), {
+    await ctx.reply(texts.welcome(ctx.from!.first_name, creditsLabel(ctx, user.credits), subscriptionLine(user.subscriptionUntil)), {
       ...html,
       reply_markup: mainMenu(isAdmin(ctx)),
     });
@@ -146,7 +150,7 @@ export function createBot({ config, gemini }: BotDeps) {
 
   const showBalance = async (ctx: Context) => {
     const user = await ensureUser(ctx.from!, config.FREE_CREDITS);
-    await ctx.reply(texts.balance(user.credits, prices, subscriptionLine(user.subscriptionUntil)), { ...html, reply_markup: buyKeyboard() });
+    await ctx.reply(texts.balance(creditsLabel(ctx, user.credits), prices, subscriptionLine(user.subscriptionUntil)), { ...html, reply_markup: buyKeyboard() });
   };
   bot.command(["balans", "balance"], showBalance);
   bot.callbackQuery("balance", async (ctx) => {
@@ -327,7 +331,7 @@ export function createBot({ config, gemini }: BotDeps) {
     }
 
     const answers = (current.wizard.answers ?? {}) as Answers;
-    const cost = costOf(service, answers);
+    const cost = priceFor(ctx, service, answers);
     const locked = await tryLock(telegramId, cost);
     if (!locked) {
       return ctx.reply(current.busy ? texts.busy : texts.notEnoughCredits(cost, current.credits), {
