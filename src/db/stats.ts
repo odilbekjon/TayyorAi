@@ -13,7 +13,7 @@ function startOfDay(daysAgo = 0) {
 }
 
 /** Toshkent vaqti bo'yicha joriy oy boshlanishi (UTC Date). */
-function startOfMonth() {
+export function startOfMonth() {
   return new Date(Date.parse(`${dayKey().slice(0, 7)}-01T00:00:00Z`) - TASHKENT_OFFSET_MS);
 }
 

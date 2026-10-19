@@ -2,6 +2,7 @@ import { Bot, GrammyError, InputFile, type Context } from "grammy";
 import { AiBusyError, type GeminiClient } from "../ai/gemini.js";
 import type { Config } from "../config.js";
 import { Order, User } from "../db/models.js";
+import { paymentStats } from "../db/payments.js";
 import { createActivityTracker, findUser, formatTashkent, getStats, recentUsers } from "../db/stats.js";
 import { ensureUser, grantSubscription, tryLock, unlock } from "../db/users.js";
 import { escapeHtml } from "../lib/html.js";
@@ -9,7 +10,8 @@ import { Limiter } from "../lib/limiter.js";
 import { checkPhotoProviders, type PhotoKeys } from "../lib/photos.js";
 import { SERVICES, getService } from "../services/registry.js";
 import { costOf, type Answers, type ServiceDef } from "../services/types.js";
-import { backToMenu, confirmKeyboard, mainMenu, stepKeyboard } from "./keyboards.js";
+import { backToMenu, buyKeyboard, confirmKeyboard, mainMenu, stepKeyboard } from "./keyboards.js";
+import { registerPayments } from "./payments.js";
 import { texts } from "./texts.js";
 
 interface BotDeps {
@@ -144,7 +146,7 @@ export function createBot({ config, gemini }: BotDeps) {
 
   const showBalance = async (ctx: Context) => {
     const user = await ensureUser(ctx.from!, config.FREE_CREDITS);
-    await ctx.reply(texts.balance(user.credits, prices, subscriptionLine(user.subscriptionUntil)), { ...html, reply_markup: backToMenu() });
+    await ctx.reply(texts.balance(user.credits, prices, subscriptionLine(user.subscriptionUntil)), { ...html, reply_markup: buyKeyboard() });
   };
   bot.command(["balans", "balance"], showBalance);
   bot.callbackQuery("balance", async (ctx) => {
@@ -172,7 +174,7 @@ export function createBot({ config, gemini }: BotDeps) {
   // Admin: /stat — foydalanuvchilar va buyurtmalar statistikasi
   const sendStats = async (ctx: Context) => {
     if (!(await requireAdmin(ctx))) return;
-    const s = await getStats(7);
+    const [s, pay] = await Promise.all([getStats(7), paymentStats()]);
     const title = (id: string) => getService(id)?.title ?? id;
     const lines = [
       "📊 <b>TayyorAI statistikasi</b>",
@@ -182,6 +184,8 @@ export function createBot({ config, gemini }: BotDeps) {
       `🆕 Shu oyda yangi: <b>${s.newMonth}</b>`,
       `🔥 Faol: bugun <b>${s.dau[0]!.users}</b>, 7 kunda <b>${s.wau}</b>, shu oyda <b>${s.mau}</b>`,
       `⭐ Faol obunachilar: <b>${s.activeSubscribers}</b>`,
+      `💵 Shu oy tushum: <b>${pay.monthRevenue.toLocaleString("ru-RU")} so'm</b> (${pay.monthPayments} ta to'lov)` +
+        (pay.pending ? `, tekshirilmagan chek: <b>${pay.pending}</b>` : ""),
       "",
       "<b>Kunlik faol foydalanuvchilar:</b>",
       ...s.dau.map((d) => `${d.day.slice(5)}: ${d.users}`),
@@ -328,12 +332,14 @@ export function createBot({ config, gemini }: BotDeps) {
     if (!locked) {
       return ctx.reply(current.busy ? texts.busy : texts.notEnoughCredits(cost, current.credits), {
         ...html,
-        reply_markup: backToMenu(),
+        reply_markup: current.busy ? backToMenu() : buyKeyboard(),
       });
     }
     // Uzoq ishni kutmaymiz, aks holda bot boshqa foydalanuvchilarga javob bermay qoladi
     void runJob(ctx, telegramId, service, answers, cost);
   });
+
+  registerPayments(bot, { config, isAdmin });
 
   // Matnli javoblar
   bot.on("message:text", async (ctx) => {
