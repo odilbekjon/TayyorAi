@@ -151,7 +151,7 @@ export const flyerService: ServiceDef = {
     if (a.photo === "yes") {
       await deps.progress?.("🖼 Rasm qidirilmoqda...");
       const found = await findPhoto(data.imageQuery, {
-        pexelsKey: deps.pexelsKey,
+        keys: deps.photoKeys,
         orientation: a.format === "post" ? "square" : "landscape",
       });
       if (found) photo = toDataUri(found);

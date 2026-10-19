@@ -1,4 +1,5 @@
 import type { GeminiClient } from "../ai/gemini.js";
+import type { PhotoKeys } from "../lib/photos.js";
 
 export interface ChoiceOption {
   label: string;
@@ -22,7 +23,7 @@ export type Answers = Record<string, string>;
 
 export interface GenerateDeps {
   gemini: GeminiClient;
-  pexelsKey?: string;
+  photoKeys?: PhotoKeys;
   /** Uzoq ishlarda foydalanuvchiga holatni ko'rsatish (masalan, "3/9 bo'lim yozilmoqda") */
   progress?: (text: string) => Promise<void>;
 }
