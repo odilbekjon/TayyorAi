@@ -16,7 +16,7 @@ Slayd, rezyume, kurs ishi, vizitka, taklifnoma, flayer, Excel va Word hujjatlarn
 - Admin buyruqlari (faqat `ADMIN_IDS` uchun):
   - `/stat`: jami foydalanuvchilar, bugungi, 7 kunlik va oylik faol foydalanuvchilar, faol obunachilar, tayyorlangan ishlar, eng ko'p ishlatilgan xizmatlar.
   - `/users`: oxirgi faol 20 ta foydalanuvchi (ID, username, balans, obuna).
-  - To'lov: foydalanuvchi /balans → "💳 Obuna sotib olish" (yoki /tolov) bosadi, `PAYMENT_CARD` ga pul o'tkazib chek skrinshotini yuboradi. Chek adminlarga "✅ Tasdiqlash / ❌ Rad etish" tugmalari bilan keladi, tasdiqlansa obuna va kredit avtomatik beriladi. `/stat` da oylik tushum ko'rinadi.
+  - To'lov: foydalanuvchi /balans → "💳 Obuna sotib olish" (yoki /tolov) bosadi, `PAYMENT_CARD` ga pul o'tkazib chek skrinshotini yuboradi. Chekni Gemini o'qiydi: chek bo'lmagan rasm va qayta yuborilgan chek rad etiladi; summa, karta oxirgi 4 raqami va sana mos kelsa obuna darhol beriladi va adminga "↩️ Qaytarib olish" tugmasi bilan xabar boradi; shubhali chek admin "✅ Tasdiqlash / ❌ Rad etish" qilishini kutadi. `PAYMENT_AUTO_APPROVE=false` bo'lsa har doim admin tasdiqlaydi. `/stat` da oylik tushum ko'rinadi.
   - `/obuna <telegramId | @username> [kun]`: oylik obuna beradi yoki uzaytiradi va `SUBSCRIPTION_CREDITS` kredit qo'shadi. Foydalanuvchi obuna holatini /balans'da ko'radi.
   - `/kredit <telegramId | @username> <miqdor>`: kredit qo'shish (manfiy son ayiradi). Foydalanuvchiga xabar boradi.
 - Har bir buyurtma `orders` kolleksiyasiga token sarfi bilan yoziladi, shunda real API xarajatini kuzatamiz.

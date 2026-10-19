@@ -19,6 +19,12 @@ export class AiBusyError extends Error {
   }
 }
 
+export interface JsonOptions {
+  /** Rasm yoki PDF (masalan, to'lov cheki) bilan birga so'rash */
+  file?: { data: Buffer; mimeType: string };
+  temperature?: number;
+}
+
 export class GeminiClient {
   private readonly ai: GoogleGenAI;
 
@@ -60,23 +66,27 @@ export class GeminiClient {
     schema: S,
     prompt: string,
     system: string,
+    options: JsonOptions = {},
   ): Promise<{ data: z.infer<S>; usage: AiUsage }> {
     // Gemini "$schema" kalitini qabul qilmasligi mumkin, shuning uchun olib tashlaymiz
     const { $schema: _ignored, ...jsonSchema } = z.toJSONSchema(schema);
     let lastError: unknown;
     let parseFailures = 0;
     let busyRetries = 0;
+    const contents = options.file
+      ? [{ role: "user", parts: [{ inlineData: { data: options.file.data.toString("base64"), mimeType: options.file.mimeType } }, { text: prompt }] }]
+      : prompt;
 
     while (parseFailures < 2) {
       try {
         const res = await this.ai.models.generateContent({
           model: this.model,
-          contents: prompt,
+          contents,
           config: {
             systemInstruction: system,
             responseMimeType: "application/json",
             responseJsonSchema: jsonSchema,
-            temperature: 0.7,
+            temperature: options.temperature ?? 0.7,
           },
         });
         const usage: AiUsage = {

@@ -15,6 +15,11 @@ const EnvSchema = z.object({
   /** To'lov qabul qilinadigan karta raqami va egasi (repoga yozilmaydi, faqat serverda) */
   PAYMENT_CARD: z.string().optional(),
   PAYMENT_CARD_HOLDER: z.string().optional(),
+  /** AI tekshiruvidan o'tgan chek uchun obunani darhol berish (admin keyin qaytarib olishi mumkin) */
+  PAYMENT_AUTO_APPROVE: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((v) => v === "true"),
   ADMIN_IDS: z
     .string()
     .optional()

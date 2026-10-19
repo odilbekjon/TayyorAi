@@ -67,9 +67,16 @@ const PaymentSchema = new Schema(
     amount: { type: Number, required: true },
     credits: { type: Number, required: true },
     days: { type: Number, required: true },
-    status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending", index: true },
+    /** auto = AI tekshiruvidan o'tib darhol berilgan (admin keyin qaytarib olishi mumkin), revoked = qaytarib olingan */
+    status: { type: String, enum: ["pending", "approved", "rejected", "auto", "revoked"], default: "pending", index: true },
     /** Chek rasmi yoki fayli (Telegram file_id) */
     fileId: { type: String, required: true },
+    /** Bir xil faylni qayta yuborishni aniqlash uchun (Telegram file_unique_id) */
+    fileUniqueId: { type: String, index: true },
+    /** Chekdagi tranzaksiya raqami: bitta chekni ikki marta ishlatishga yo'l qo'ymaslik uchun */
+    transactionId: { type: String, index: true },
+    /** AI tekshiruvi natijasi */
+    ai: Schema.Types.Mixed,
     fileKind: { type: String, enum: ["photo", "document"], required: true },
     decidedBy: Number,
     decidedAt: Date,

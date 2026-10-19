@@ -343,7 +343,7 @@ export function createBot({ config, gemini }: BotDeps) {
     void runJob(ctx, telegramId, service, answers, cost);
   });
 
-  registerPayments(bot, { config, isAdmin });
+  registerPayments(bot, { config, gemini, isAdmin });
 
   // Matnli javoblar
   bot.on("message:text", async (ctx) => {

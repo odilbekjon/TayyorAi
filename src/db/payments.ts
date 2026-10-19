@@ -10,6 +10,27 @@ export async function decidePayment(id: string, status: "approved" | "rejected",
   );
 }
 
+/** Avtomatik berilgan to'lovni bekor qilish uchun belgilaydi */
+export async function revokePayment(id: string, adminId: number) {
+  return Payment.findOneAndUpdate(
+    { _id: id, status: "auto" },
+    { $set: { status: "revoked", decidedBy: adminId, decidedAt: new Date() } },
+    { returnDocument: "after" },
+  );
+}
+
+/** Shu fayl yoki tranzaksiya raqami bilan avval to'lov qilinganmi (rad etilganlardan tashqari) */
+export async function isDuplicateReceipt(fileUniqueId: string, transactionId?: string | null) {
+  const or: Record<string, string>[] = [{ fileUniqueId }];
+  if (transactionId) or.push({ transactionId });
+  return (await Payment.exists({ $or: or, status: { $ne: "rejected" } })) !== null;
+}
+
+/** Avval rad etilgan yoki qaytarib olingan to'lovi bo'lsa, avtomatik tasdiqlanmaydi */
+export async function hasBadPaymentHistory(telegramId: number) {
+  return (await Payment.exists({ telegramId, status: { $in: ["rejected", "revoked"] }, decidedBy: { $exists: true } })) !== null;
+}
+
 export async function hasPendingPayment(telegramId: number) {
   return (await Payment.exists({ telegramId, status: "pending" })) !== null;
 }
@@ -18,7 +39,7 @@ export async function hasPendingPayment(telegramId: number) {
 export async function paymentStats() {
   const [month, pending] = await Promise.all([
     Payment.aggregate<{ total: number; count: number }>([
-      { $match: { status: "approved", decidedAt: { $gte: startOfMonth() } } },
+      { $match: { status: { $in: ["approved", "auto"] }, decidedAt: { $gte: startOfMonth() } } },
       { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } },
     ]),
     Payment.countDocuments({ status: "pending" }),
