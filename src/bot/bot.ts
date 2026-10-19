@@ -24,8 +24,23 @@ export function createBot({ config, gemini }: BotDeps) {
   const html = { parse_mode: "HTML" as const };
   const prices = SERVICES.map((s) => `${s.title}: ${s.cost} ${s.costFor ? "kreditdan" : "kredit"}`).join("\n");
 
+  const isAdmin = (ctx: Context) => config.ADMIN_IDS.includes(ctx.from!.id);
+
+  /** Admin bo'lmasa, ID'sini ko'rsatadi: uni Railway'dagi ADMIN_IDS ga qo'shish kerak bo'ladi */
+  async function requireAdmin(ctx: Context) {
+    if (isAdmin(ctx)) return true;
+    await ctx.reply(texts.notAdmin(ctx.from!.id), html);
+    return false;
+  }
+
   async function showMenu(ctx: Context, text: string) {
-    await ctx.reply(text, { ...html, reply_markup: mainMenu() });
+    await ctx.reply(text, { ...html, reply_markup: mainMenu(isAdmin(ctx)) });
+  }
+
+  function subscriptionLine(until?: Date | null) {
+    return until && until.getTime() > Date.now()
+      ? texts.subscriptionActive(formatTashkent(until).slice(0, 10), Math.ceil((until.getTime() - Date.now()) / 86_400_000))
+      : texts.subscriptionNone(config.SUBSCRIPTION_PRICE, config.SUBSCRIPTION_CREDITS, config.SUBSCRIPTION_DAYS);
   }
 
   async function askStep(ctx: Context, service: ServiceDef, stepIndex: number) {
@@ -110,12 +125,13 @@ export function createBot({ config, gemini }: BotDeps) {
     await next();
   });
 
-  const isAdmin = (ctx: Context) => config.ADMIN_IDS.includes(ctx.from!.id);
-
   bot.command("start", async (ctx) => {
     const user = await ensureUser(ctx.from!, config.FREE_CREDITS);
     await User.updateOne({ telegramId: user.telegramId, busy: false }, { $set: { wizard: null } });
-    await ctx.reply(texts.welcome(ctx.from!.first_name, user.credits), { ...html, reply_markup: mainMenu() });
+    await ctx.reply(texts.welcome(ctx.from!.first_name, user.credits, subscriptionLine(user.subscriptionUntil)), {
+      ...html,
+      reply_markup: mainMenu(isAdmin(ctx)),
+    });
   });
 
   bot.command("menu", (ctx) => showMenu(ctx, texts.menu));
@@ -126,12 +142,7 @@ export function createBot({ config, gemini }: BotDeps) {
 
   const showBalance = async (ctx: Context) => {
     const user = await ensureUser(ctx.from!, config.FREE_CREDITS);
-    const until = user.subscriptionUntil;
-    const subscription =
-      until && until.getTime() > Date.now()
-        ? texts.subscriptionActive(formatTashkent(until).slice(0, 10), Math.ceil((until.getTime() - Date.now()) / 86_400_000))
-        : texts.subscriptionNone(config.SUBSCRIPTION_PRICE, config.SUBSCRIPTION_CREDITS, config.SUBSCRIPTION_DAYS);
-    await ctx.reply(texts.balance(user.credits, prices, subscription), { ...html, reply_markup: backToMenu() });
+    await ctx.reply(texts.balance(user.credits, prices, subscriptionLine(user.subscriptionUntil)), { ...html, reply_markup: backToMenu() });
   };
   bot.command(["balans", "balance"], showBalance);
   bot.callbackQuery("balance", async (ctx) => {
@@ -157,8 +168,8 @@ export function createBot({ config, gemini }: BotDeps) {
   });
 
   // Admin: /stat — foydalanuvchilar va buyurtmalar statistikasi
-  bot.command("stat", async (ctx) => {
-    if (!isAdmin(ctx)) return;
+  const sendStats = async (ctx: Context) => {
+    if (!(await requireAdmin(ctx))) return;
     const s = await getStats(7);
     const title = (id: string) => getService(id)?.title ?? id;
     const lines = [
@@ -183,24 +194,37 @@ export function createBot({ config, gemini }: BotDeps) {
       "",
       `🔢 7 kunlik token: ${s.tokensWeek.input.toLocaleString("en-US")} kirish / ${s.tokensWeek.output.toLocaleString("en-US")} chiqish`,
     ];
-    await ctx.reply(lines.join("\n"), html);
+    await ctx.reply(lines.join("\n"), { ...html, reply_markup: backToMenu() });
+  };
+  bot.command(["stat", "statistika"], sendStats);
+  bot.callbackQuery("admin:stat", async (ctx) => {
+    await ctx.answerCallbackQuery();
+    await sendStats(ctx);
   });
 
   // Admin: /users — oxirgi faol foydalanuvchilar ro'yxati (ID'ni bilish uchun)
-  bot.command("users", async (ctx) => {
-    if (!isAdmin(ctx)) return;
+  const sendUsers = async (ctx: Context) => {
+    if (!(await requireAdmin(ctx))) return;
     const users = await recentUsers(20);
     const fmt = (d?: Date | null) => (d ? formatTashkent(d).slice(5) : "—");
     const lines = users.map((u) => {
       const sub = u.subscriptionUntil && u.subscriptionUntil.getTime() > Date.now() ? ` · ⭐ ${formatTashkent(u.subscriptionUntil).slice(5, 10)} gacha` : "";
       return `<code>${u.telegramId}</code> ${escapeHtml(u.firstName ?? "")}${u.username ? ` @${escapeHtml(u.username)}` : ""} · ${u.credits} kr${sub} · ${fmt(u.lastSeenAt)}`;
     });
-    await ctx.reply(["👥 <b>Oxirgi faol foydalanuvchilar</b> (⭐ = obunachi)", "", ...lines].join("\n"), html);
+    await ctx.reply(["👥 <b>Oxirgi faol foydalanuvchilar</b> (⭐ = obunachi)", "", ...lines].join("\n"), {
+      ...html,
+      reply_markup: backToMenu(),
+    });
+  };
+  bot.command("users", sendUsers);
+  bot.callbackQuery("admin:users", async (ctx) => {
+    await ctx.answerCallbackQuery();
+    await sendUsers(ctx);
   });
 
   // Admin: /obuna <telegramId | @username> [kun] — oylik obuna beradi (kredit ham qo'shiladi)
   bot.command("obuna", async (ctx) => {
-    if (!isAdmin(ctx)) return;
+    if (!(await requireAdmin(ctx))) return;
     const [ref, rawDays] = ctx.match.trim().split(/\s+/);
     const days = rawDays ? Number(rawDays) : config.SUBSCRIPTION_DAYS;
     if (!ref || !Number.isInteger(days) || days <= 0) {
@@ -221,7 +245,7 @@ export function createBot({ config, gemini }: BotDeps) {
 
   // Admin: /kredit <telegramId | @username> <miqdor> (manfiy miqdor kreditni ayiradi)
   bot.command("kredit", async (ctx) => {
-    if (!isAdmin(ctx)) return;
+    if (!(await requireAdmin(ctx))) return;
     const [ref, rawAmount] = ctx.match.trim().split(/\s+/);
     const amount = Number(rawAmount);
     if (!ref || !Number.isInteger(amount) || amount === 0) {

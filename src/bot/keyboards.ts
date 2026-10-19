@@ -2,13 +2,15 @@ import { InlineKeyboard } from "grammy";
 import { SERVICES } from "../services/registry.js";
 import type { WizardStep } from "../services/types.js";
 
-export function mainMenu() {
+export function mainMenu(admin = false) {
   const kb = new InlineKeyboard();
   SERVICES.forEach((s, i) => {
     kb.text(s.enabled ? s.title : `${s.title} ⏳`, `svc:${s.id}`);
     if (i % 2 === 1) kb.row();
   });
-  return kb.row().text("💰 Balans", "balance").text("ℹ️ Yordam", "help");
+  kb.row().text("💰 Balans", "balance").text("ℹ️ Yordam", "help");
+  if (admin) kb.row().text("📊 Statistika", "admin:stat").text("👥 Foydalanuvchilar", "admin:users");
+  return kb;
 }
 
 export function stepKeyboard(step: WizardStep, stepIndex: number) {
