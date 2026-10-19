@@ -40,6 +40,8 @@ async function main() {
     { command: "obuna", description: "Oylik obuna berish (admin)" },
     { command: "rasm", description: "Rasm manbalarini tekshirish (admin)" },
   ];
+  if (config.ADMIN_IDS.length) console.log(`👑 Adminlar: ${config.ADMIN_IDS.join(", ")}`);
+  else console.warn("⚠️ ADMIN_IDS bo'sh: /stat va boshqa admin buyruqlari hech kimga ishlamaydi");
   for (const chatId of config.ADMIN_IDS) {
     await bot.api
       .setMyCommands(adminCommands, { scope: { type: "chat", chat_id: chatId } })
