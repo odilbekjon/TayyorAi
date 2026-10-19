@@ -27,6 +27,7 @@ async function main() {
     { command: "start", description: "Boshlash" },
     { command: "menu", description: "Xizmatlar menyusi" },
     { command: "balans", description: "Kredit balansi" },
+    { command: "tolov", description: "Obuna sotib olish" },
     { command: "bekor", description: "Joriy ishni bekor qilish" },
     { command: "help", description: "Yordam" },
   ];
@@ -42,6 +43,7 @@ async function main() {
   ];
   if (config.ADMIN_IDS.length) console.log(`👑 Adminlar: ${config.ADMIN_IDS.join(", ")}`);
   else console.warn("⚠️ ADMIN_IDS bo'sh: /stat va boshqa admin buyruqlari hech kimga ishlamaydi");
+  if (!config.PAYMENT_CARD) console.warn("⚠️ PAYMENT_CARD bo'sh: foydalanuvchilar obuna sotib ola olmaydi");
   for (const chatId of config.ADMIN_IDS) {
     await bot.api
       .setMyCommands(adminCommands, { scope: { type: "chat", chat_id: chatId } })

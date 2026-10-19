@@ -21,6 +21,8 @@ const UserSchema = new Schema(
     lastSeenAt: Date,
     /** Oylik obuna shu vaqtgacha faol (bo'lmasa obuna yo'q) */
     subscriptionUntil: Date,
+    /** "Obuna sotib olish" bosilgan vaqt: shundan keyin yuborilgan rasm to'lov cheki deb olinadi */
+    awaitingReceiptAt: Date,
     wizard: { type: WizardSchema, default: null },
   },
   { timestamps: true },
@@ -57,3 +59,22 @@ const ActivitySchema = new Schema({
 ActivitySchema.index({ day: 1, telegramId: 1 }, { unique: true });
 
 export const Activity = model("Activity", ActivitySchema);
+
+/** Karta orqali qo'lda to'lov: foydalanuvchi chek yuboradi, admin tasdiqlaydi */
+const PaymentSchema = new Schema(
+  {
+    telegramId: { type: Number, required: true, index: true },
+    amount: { type: Number, required: true },
+    credits: { type: Number, required: true },
+    days: { type: Number, required: true },
+    status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending", index: true },
+    /** Chek rasmi yoki fayli (Telegram file_id) */
+    fileId: { type: String, required: true },
+    fileKind: { type: String, enum: ["photo", "document"], required: true },
+    decidedBy: Number,
+    decidedAt: Date,
+  },
+  { timestamps: true },
+);
+
+export const Payment = model("Payment", PaymentSchema);

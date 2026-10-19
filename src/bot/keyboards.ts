@@ -31,3 +31,11 @@ export function confirmKeyboard() {
 export function backToMenu() {
   return new InlineKeyboard().text("🏠 Bosh menyu", "menu");
 }
+
+export function buyKeyboard() {
+  return new InlineKeyboard().text("💳 Obuna sotib olish", "pay:start").row().text("🏠 Bosh menyu", "menu");
+}
+
+export function paymentDecisionKeyboard(paymentId: string) {
+  return new InlineKeyboard().text("✅ Tasdiqlash", `pay:ok:${paymentId}`).text("❌ Rad etish", `pay:no:${paymentId}`);
+}
