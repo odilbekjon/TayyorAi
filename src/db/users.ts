@@ -54,3 +54,20 @@ export async function grantSubscription(telegramId: number, days: number, credit
     { returnDocument: "after", updatePipeline: true },
   );
 }
+
+/** Avtomatik berilgan obunani qaytarib oladi: muddatni qisqartiradi va kreditni ayiradi (0 dan pastga tushmaydi) */
+export async function revokeSubscription(telegramId: number, days: number, credits: number) {
+  const ms = days * 86_400_000;
+  return User.findOneAndUpdate(
+    { telegramId },
+    [
+      {
+        $set: {
+          subscriptionUntil: { $subtract: [{ $ifNull: ["$subscriptionUntil", "$$NOW"] }, ms] },
+          credits: { $max: [0, { $subtract: ["$credits", credits] }] },
+        },
+      },
+    ],
+    { returnDocument: "after", updatePipeline: true },
+  );
+}

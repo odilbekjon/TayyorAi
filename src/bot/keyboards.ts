@@ -39,3 +39,7 @@ export function buyKeyboard() {
 export function paymentDecisionKeyboard(paymentId: string) {
   return new InlineKeyboard().text("✅ Tasdiqlash", `pay:ok:${paymentId}`).text("❌ Rad etish", `pay:no:${paymentId}`);
 }
+
+export function paymentRevokeKeyboard(paymentId: string) {
+  return new InlineKeyboard().text("↩️ Pul tushmagan, qaytarib olish", `pay:rev:${paymentId}`);
+}

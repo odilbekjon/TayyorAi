@@ -39,10 +39,16 @@ export const texts = {
   payUnavailable: "💳 To'lov hozircha sozlanmagan. Iltimos, admin bilan bog'laning.",
   payPending: "⏳ Oldingi chekingiz hali tekshirilmoqda. Admin tasdiqlagach xabar keladi.",
   payReceived: "✅ Chek qabul qilindi! Admin tekshirgach obunangiz faollashadi va sizga xabar keladi.",
+  payChecking: "🔎 Chek tekshirilmoqda...",
+  payNotReceipt: (reason: string) =>
+    `😔 Bu rasm to'lov chekiga o'xshamaydi (${escapeHtml(reason)}).\n\n` +
+    `Iltimos, bank ilovasidagi o'tkazma chekining skrinshotini yuboring.`,
+  payDuplicate: "⚠️ Bu chek avval yuborilgan. Iltimos, yangi to'lov chekini yuboring.",
   payRejected: "😔 To'lovingiz tasdiqlanmadi. Savol bo'lsa, admin bilan bog'laning.",
-  payAdmin: (name: string, id: number, username: string | undefined, amount: number) =>
+  payRevoked: "😔 Admin chekingizni tekshirib, to'lovni tasdiqlamadi. Obuna va kredit qaytarib olindi. Savol bo'lsa, admin bilan bog'laning.",
+  payAdmin: (name: string, id: number, username: string | undefined, amount: number, note: string) =>
     `💳 <b>Yangi to'lov cheki</b>\n\n👤 ${escapeHtml(name)}${username ? ` @${escapeHtml(username)}` : ""}\n` +
-    `🆔 <code>${id}</code>\n💰 ${amount.toLocaleString("ru-RU")} so'm\n\nKartangizga pul tushganini tekshirib, tasdiqlang.`,
+    `🆔 <code>${id}</code>\n💰 ${amount.toLocaleString("ru-RU")} so'm\n\n${note}`,
   creditsAdded: (amount: number, credits: number) =>
     `🎉 Hisobingizga <b>${amount} kredit</b> qo'shildi. Balansingiz: <b>${credits} kredit</b>.`,
   busy: "⏳ Oldingi ishingiz hali tayyorlanmoqda. Iltimos, biroz kuting.",
