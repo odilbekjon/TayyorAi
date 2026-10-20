@@ -212,6 +212,17 @@ export function createBot({ config, gemini }: BotDeps) {
     await sendStats(ctx);
   });
 
+  // Admin: /ai — Gemini modellari holati va oxirgi xatolar
+  bot.command("ai", async (ctx) => {
+    if (!isAdmin(ctx)) return;
+    const lines = gemini.status().map((s, i) => {
+      const state = s.restingSec ? `⏸ ${Math.ceil(s.restingSec / 60)} daqiqa dam oladi` : "✅ tayyor";
+      const err = s.lastError ? `\n   oxirgi xato: ${escapeHtml(s.lastError.text)} (${formatTashkent(s.lastError.at).slice(5)})` : "";
+      return `${i === 0 ? "⭐" : "↪️"} <code>${escapeHtml(s.model)}</code>: ${state}${err}`;
+    });
+    await ctx.reply(["🤖 <b>Gemini modellari</b> (⭐ asosiy, ↪️ zaxira)", "", ...lines].join("\n"), html);
+  });
+
   // Admin: /rasm — rasm manbalari serverdan ishlayaptimi
   bot.command("rasm", async (ctx) => {
     if (!isAdmin(ctx)) return;
