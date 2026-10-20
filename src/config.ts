@@ -4,6 +4,11 @@ const EnvSchema = z.object({
   BOT_TOKEN: z.string().min(20, "BOT_TOKEN kiritilmagan"),
   GEMINI_API_KEY: z.string().min(10, "GEMINI_API_KEY kiritilmagan"),
   GEMINI_MODEL: z.string().default("gemini-3.8-flash"),
+  /** Asosiy model limiti tugaganda ishlatiladigan modellar, vergul bilan. Bo'sh bo'lsa avtomatik tanlanadi */
+  GEMINI_FALLBACK_MODELS: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? "").split(",").map((s) => s.trim()).filter(Boolean)),
   MONGODB_URI: z.string().startsWith("mongodb", "MONGODB_URI noto'g'ri"),
   PEXELS_API_KEY: z.string().optional(),
   PIXABAY_API_KEY: z.string().optional(),

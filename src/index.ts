@@ -13,9 +13,10 @@ async function main() {
   await releaseStaleLocks();
   console.log("✅ MongoDB ulandi");
 
-  const gemini = new GeminiClient(config.GEMINI_API_KEY, config.GEMINI_MODEL);
+  const gemini = new GeminiClient(config.GEMINI_API_KEY, config.GEMINI_MODEL, config.GEMINI_FALLBACK_MODELS);
   await gemini.checkModel();
-  console.log(`✅ Gemini modeli: ${config.GEMINI_MODEL}`);
+  await gemini.resolveFallbacks();
+  console.log(`✅ Gemini modellari: ${gemini.activeModels.join(" → ")}`);
   const bot = createBot({ config, gemini });
 
   // Rasm manbalari serverdan ochiladimi: natija loglarda ko'rinadi (botni kutdirmaydi)
@@ -40,6 +41,7 @@ async function main() {
     { command: "kredit", description: "Kredit qo'shish (admin)" },
     { command: "obuna", description: "Oylik obuna berish (admin)" },
     { command: "rasm", description: "Rasm manbalarini tekshirish (admin)" },
+    { command: "ai", description: "Gemini modellari holati (admin)" },
   ];
   if (config.ADMIN_IDS.length) console.log(`👑 Adminlar: ${config.ADMIN_IDS.join(", ")}`);
   else console.warn("⚠️ ADMIN_IDS bo'sh: /stat va boshqa admin buyruqlari hech kimga ishlamaydi");
