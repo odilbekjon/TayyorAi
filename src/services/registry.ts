@@ -1,8 +1,11 @@
 import { cardService } from "./card/index.js";
+import { certificateService } from "./certificate/index.js";
+import { convertService } from "./convert/index.js";
 import { courseworkService } from "./coursework/index.js";
 import { excelService } from "./excel/index.js";
 import { flyerService } from "./flyer/index.js";
 import { inviteService } from "./invite/index.js";
+import { quizService } from "./quiz/index.js";
 import { resumeService } from "./resume/index.js";
 import { slidesService } from "./slides/index.js";
 import type { ServiceDef } from "./types.js";
@@ -17,6 +20,9 @@ export const SERVICES: ServiceDef[] = [
   inviteService,
   flyerService,
   excelService,
+  quizService,
+  certificateService,
+  convertService,
 ];
 
 export function getService(id: string | undefined) {

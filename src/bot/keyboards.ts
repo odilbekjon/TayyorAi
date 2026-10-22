@@ -24,6 +24,10 @@ export function stepKeyboard(step: WizardStep, stepIndex: number) {
   return kb.row().text("❌ Bekor qilish", "w:cancel");
 }
 
+export function filesDoneKeyboard(stepIndex: number) {
+  return new InlineKeyboard().text("✅ Tayyor", `w:done:${stepIndex}`).text("❌ Bekor qilish", "w:cancel");
+}
+
 export function confirmKeyboard() {
   return new InlineKeyboard().text("✅ Tayyorlash", "w:confirm").text("❌ Bekor qilish", "w:cancel");
 }

@@ -4,7 +4,8 @@ Slayd, rezyume, kurs ishi, vizitka, taklifnoma, flayer, Excel va Word hujjatlarn
 
 ## Hozir nima tayyor (1-bosqich)
 
-- Bosh menyu: 8 ta xizmat, hammasi ishlaydi: Slayd, Rezyume, Kurs ishi/mustaqil ish, Word hujjat, Vizitka, Taklifnoma, Flayer, Excel.
+- Bosh menyu: 11 ta xizmat, hammasi ishlaydi: Slayd, Rezyume, Kurs ishi/mustaqil ish, Word hujjat, Vizitka, Taklifnoma, Flayer, Excel, Test tayyorlash, Sertifikat/diplom, Format o'zgartirish.
+- Format o'zgartirish (Word/PowerPoint/Excel → PDF, PDF → Word, rasm ↔ PDF) AI ishlatmaydi: Docker image ichidagi LibreOffice, pdf2docx va poppler bilan ishlaydi, alohida navbatda bajariladi.
 - Savol-javob oqimi: har bir xizmat o'z savollarini `steps` ro'yxati orqali beradi (`src/services/*`).
 - Kredit tizimi: yangi foydalanuvchiga `FREE_CREDITS` (standart 20 = 2 ta slayd). Kredit faqat fayl muvaffaqiyatli tayyorlangandan keyin yechiladi. Bir foydalanuvchi bir vaqtda faqat bitta ish buyurtma qila oladi.
 - Slayd: Gemini mazmunni JSON qilib yozadi, PptxGenJS 4 xil dizaynda `.pptx` yasaydi. Rasmlar navbat bilan: Pexels (`PEXELS_API_KEY`), Pixabay (`PIXABAY_API_KEY`), kalitsiz Openverse va Wikimedia Commons (manbasi rasm ostida yoziladi). Admin `/rasm` buyrug'i bilan qaysi manba serverdan ishlayotganini tekshiradi.

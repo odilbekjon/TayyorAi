@@ -56,6 +56,23 @@ export async function renderHtml(html: string, width: number, height: number, sc
   }
 }
 
+/**
+ * Ko'p sahifali PDF: har bir sahifa HTML ichida `break-after: page` bilan ajratiladi.
+ * Masalan, rasmlardan PDF yoki bir nechta ismga sertifikat.
+ */
+export async function htmlToPdf(html: string, size: { width: string; height: string }): Promise<Buffer> {
+  const browser = await getBrowser();
+  const context = await browser.newContext();
+  try {
+    const page = await context.newPage();
+    await page.setContent(html, { waitUntil: "networkidle", timeout: 60_000 }).catch(() => undefined);
+    await page.evaluate(() => document.fonts.ready).catch(() => undefined);
+    return await page.pdf({ ...size, printBackground: true, margin: { top: "0", right: "0", bottom: "0", left: "0" } });
+  } finally {
+    await context.close();
+  }
+}
+
 /** mm → CSS piksel (96 dpi) */
 export const mmToPx = (mm: number) => Math.round((mm * 96) / 25.4);
 
