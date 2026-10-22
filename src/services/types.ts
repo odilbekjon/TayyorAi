@@ -9,7 +9,7 @@ export interface ChoiceOption {
 export interface WizardStep {
   key: string;
   question: string;
-  kind: "text" | "choice";
+  kind: "text" | "choice" | "file";
   options?: ChoiceOption[];
   /** Tugmalar bir qatorda nechtadan chiqadi */
   columns?: number;
@@ -17,12 +17,36 @@ export interface WizardStep {
   maxLength?: number;
   /** "O'tkazib yuborish" tugmasi chiqadi */
   optional?: boolean;
+  /** Matnli javobni qo'shimcha tekshirish: xato bo'lsa foydalanuvchiga ko'rsatiladigan matn */
+  validate?: (value: string) => string | undefined;
+  /** kind = "file": qabul qilinadigan fayl turi (javoblarga qarab o'zgarishi mumkin) */
+  accept?: (answers: Answers) => FileAccept;
+}
+
+export interface FileAccept {
+  /** Ruxsat etilgan kengaytmalar, masalan [".docx", ".doc"] */
+  extensions: string[];
+  /** Telegram'ning siqilgan rasmini (photo) ham qabul qiladi */
+  photos?: boolean;
+  /** Bir nechta fayl yig'iladi va "Tayyor" tugmasi chiqadi */
+  maxFiles?: number;
+  /** Savol matni o'rniga ko'rsatiladigan izoh */
+  question?: string;
+}
+
+/** Foydalanuvchi yuborgan fayl: javoblarda JSON ro'yxat sifatida saqlanadi */
+export interface UploadedFile {
+  fileId: string;
+  name: string;
+  size?: number;
 }
 
 export type Answers = Record<string, string>;
 
 export interface GenerateDeps {
   gemini: GeminiClient;
+  /** Foydalanuvchi yuborgan faylni Telegram'dan yuklab oladi */
+  download: (fileId: string) => Promise<Buffer>;
   photoKeys?: PhotoKeys;
   /** Uzoq ishlarda foydalanuvchiga holatni ko'rsatish (masalan, "3/9 bo'lim yozilmoqda") */
   progress?: (text: string) => Promise<void>;
@@ -48,6 +72,8 @@ export interface ServiceDef {
   costFor?: (answers: Answers) => number;
   /** Kutish vaqti haqida matn, masalan "1-3 daqiqa" */
   eta?: string;
+  /** AI ishlatmaydi: Gemini navbatini band qilmaydi (masalan, format o'zgartirish) */
+  local?: boolean;
   enabled: boolean;
   steps: WizardStep[];
   generate?: (answers: Answers, deps: GenerateDeps) => Promise<GenerateResult>;
@@ -69,4 +95,12 @@ export const LANGUAGE_PROMPT: Record<string, string> = {
 
 export function costOf(service: ServiceDef, answers: Answers) {
   return service.costFor?.(answers) ?? service.cost;
+}
+
+export function filesOf(answers: Answers, key: string): UploadedFile[] {
+  try {
+    return JSON.parse(answers[key] ?? "[]") as UploadedFile[];
+  } catch {
+    return [];
+  }
 }

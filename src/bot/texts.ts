@@ -3,7 +3,7 @@ import { escapeHtml } from "../lib/html.js";
 export const texts = {
   welcome: (name: string, credits: string, subscription: string) =>
     `Assalomu alaykum, <b>${escapeHtml(name)}</b>! 👋\n\n` +
-    `Men <b>TayyorAI</b>, sizga slayd, rezyume, kurs ishi, vizitka, taklifnoma va boshqa ishlarni bir necha daqiqada tayyorlab beraman.\n\n` +
+    `Men <b>TayyorAI</b>, sizga slayd, rezyume, kurs ishi, test, sertifikat, vizitka, taklifnoma va boshqa ishlarni bir necha daqiqada tayyorlab beraman. Fayl formatini ham o'zgartiraman (Word ↔ PDF, rasm ↔ PDF).\n\n` +
     `💰 Balans: <b>${credits}</b>\n${subscription}\n\nKerakli xizmatni tanlang:`,
   notAdmin: (id: number) =>
     `⛔ Bu buyruq faqat admin uchun.\nSizning Telegram ID: <code>${id}</code>\n\n` +
@@ -28,6 +28,12 @@ export const texts = {
   useButtons: "👆 Iltimos, yuqoridagi tugmalardan birini tanlang.",
   tooShort: (n: number) => `Juda qisqa. Kamida ${n} ta belgi yozing.`,
   tooLong: (n: number) => `Juda uzun. Ko'pi bilan ${n} ta belgi yozing.`,
+  sendFile: "📎 Iltimos, faylni shu chatga yuboring.",
+  wrongFile: (formats: string) => `😔 Bu fayl turi mos emas. Quyidagilardan birini yuboring: <b>${escapeHtml(formats)}</b>`,
+  fileTooBig: (mb: number) => `😔 Fayl juda katta. Telegram botlari ${mb} MB gacha bo'lgan faylni qabul qiladi.`,
+  filesReceived: (count: number, max: number) =>
+    `✅ ${count} ta fayl qabul qilindi (ko'pi bilan ${max} ta).\n\nYana yuboring yoki "Tayyor" tugmasini bosing.`,
+  tooManyFiles: (max: number) => `⚠️ Ko'pi bilan ${max} ta fayl yuborish mumkin. "Tayyor" tugmasini bosing.`,
   notEnoughCredits: (need: number, have: number) =>
     `😔 Kredit yetarli emas. Kerak: <b>${need}</b>, sizda: <b>${have}</b>.\n\nObuna sotib olib, kredit oling 👇`,
   payInstructions: (price: number, credits: number, days: number, card: string, holder?: string) =>

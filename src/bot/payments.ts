@@ -7,6 +7,7 @@ import { grantSubscription, revokeSubscription } from "../db/users.js";
 import type { GeminiClient } from "../ai/gemini.js";
 import { escapeHtml } from "../lib/html.js";
 import { judgeReceipt, readReceipt, type ReceiptInfo, type ReceiptVerdict } from "../lib/receipt.js";
+import { downloadTelegramFile } from "../lib/telegram.js";
 import { backToMenu, paymentDecisionKeyboard, paymentRevokeKeyboard } from "./keyboards.js";
 import { texts } from "./texts.js";
 
@@ -44,15 +45,6 @@ export function registerPayments(bot: Bot, { config, gemini, isAdmin }: PaymentD
     await ctx.answerCallbackQuery();
     await startPayment(ctx);
   });
-
-  /** Telegram'dan faylni yuklab oladi (AI tekshiruvi uchun) */
-  async function download(ctx: Context, fileId: string) {
-    const file = await ctx.api.getFile(fileId);
-    if (!file.file_path) throw new Error("Fayl yo'li topilmadi");
-    const res = await fetch(`https://api.telegram.org/file/bot${config.BOT_TOKEN}/${file.file_path}`);
-    if (!res.ok) throw new Error(`Faylni yuklab bo'lmadi: ${res.status}`);
-    return Buffer.from(await res.arrayBuffer());
-  }
 
   async function notifyAdmins(ctx: Context, fileKind: "photo" | "document", fileId: string, caption: string, reply_markup: ReturnType<typeof paymentDecisionKeyboard>) {
     const options = { caption, ...html, reply_markup };
@@ -92,7 +84,7 @@ export function registerPayments(bot: Bot, { config, gemini, isAdmin }: PaymentD
     let receipt: ReceiptInfo | null = null;
     let verdict: ReceiptVerdict;
     try {
-      receipt = await readReceipt(gemini, { data: await download(ctx, fileId), mimeType });
+      receipt = await readReceipt(gemini, { data: await downloadTelegramFile(ctx.api, config.BOT_TOKEN, fileId), mimeType });
       verdict = judgeReceipt(receipt, { amount: config.SUBSCRIPTION_PRICE, card: config.PAYMENT_CARD });
     } catch (err) {
       // AI ishlamasa, chekni admin o'zi ko'radi

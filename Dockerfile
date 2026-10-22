@@ -14,6 +14,17 @@ RUN npm run build
 
 # 2-bosqich: faqat ishga tushirish uchun kerak narsalar
 FROM ${BASE_IMAGE}
+# Format o'zgartirish uchun: LibreOffice (Word/Excel/PowerPoint → PDF), poppler (PDF → rasm),
+# pdf2docx (PDF → Word) va Microsoft shriftlariga o'lchami mos shriftlar (Times New Roman, Calibri, Cambria o'rniga)
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+    libreoffice-writer libreoffice-calc libreoffice-impress \
+    poppler-utils python3-venv \
+    fonts-liberation2 fonts-crosextra-carlito fonts-crosextra-caladea \
+ && python3 -m venv /opt/pdf2docx \
+ && /opt/pdf2docx/bin/pip install --no-cache-dir pdf2docx==0.5.13 \
+ && apt-get clean && rm -rf /var/lib/apt/lists/*
+ENV PDF2DOCX_PATH=/opt/pdf2docx/bin/pdf2docx
 WORKDIR /app
 ENV NODE_ENV=production
 COPY package.json package-lock.json ./

@@ -5,6 +5,8 @@ const WizardSchema = new Schema(
     service: { type: String, required: true },
     step: { type: Number, required: true, default: 0 },
     answers: { type: Schema.Types.Mixed, default: {} },
+    /** Fayl so'raladigan qadamda yig'ilayotgan fayllar ("Tayyor" bosilguncha) */
+    files: { type: [Schema.Types.Mixed], default: [] },
   },
   { _id: false },
 );

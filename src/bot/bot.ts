@@ -8,9 +8,10 @@ import { ensureUser, grantSubscription, tryLock, unlock } from "../db/users.js";
 import { escapeHtml } from "../lib/html.js";
 import { Limiter } from "../lib/limiter.js";
 import { checkPhotoProviders, type PhotoKeys } from "../lib/photos.js";
+import { MAX_DOWNLOAD_BYTES, downloadTelegramFile } from "../lib/telegram.js";
 import { SERVICES, getService } from "../services/registry.js";
-import { costOf, type Answers, type ServiceDef } from "../services/types.js";
-import { backToMenu, buyKeyboard, confirmKeyboard, mainMenu, stepKeyboard } from "./keyboards.js";
+import { costOf, filesOf, type Answers, type ServiceDef, type UploadedFile } from "../services/types.js";
+import { backToMenu, buyKeyboard, confirmKeyboard, filesDoneKeyboard, mainMenu, stepKeyboard } from "./keyboards.js";
 import { registerPayments } from "./payments.js";
 import { texts } from "./texts.js";
 
@@ -24,6 +25,9 @@ export function createBot({ config, gemini }: BotDeps) {
   const photoKeys: PhotoKeys = { pexels: config.PEXELS_API_KEY, pixabay: config.PIXABAY_API_KEY };
   // Bepul Gemini tarifi uchun: bir vaqtda 2 ta ish
   const limiter = new Limiter(2);
+  // AI ishlatmaydigan og'ir ishlar (LibreOffice va h.k.) uchun alohida navbat: CPU va RAM'ni tejaydi
+  const localLimiter = new Limiter(1);
+  const download = (fileId: string) => downloadTelegramFile(bot.api, config.BOT_TOKEN, fileId);
 
   const html = { parse_mode: "HTML" as const };
   const prices = SERVICES.map((s) => `${s.title}: ${s.cost} ${s.costFor ? "kreditdan" : "kredit"}`).join("\n");
@@ -53,7 +57,12 @@ export function createBot({ config, gemini }: BotDeps) {
 
   async function askStep(ctx: Context, service: ServiceDef, stepIndex: number) {
     const step = service.steps[stepIndex]!;
-    await ctx.reply(step.question, { ...html, reply_markup: stepKeyboard(step, stepIndex) });
+    let question = step.question;
+    if (step.kind === "file") {
+      const user = await User.findOne({ telegramId: ctx.from!.id });
+      question = step.accept?.((user?.wizard?.answers ?? {}) as Answers).question ?? question;
+    }
+    await ctx.reply(question, { ...html, reply_markup: stepKeyboard(step, stepIndex) });
   }
 
   async function showSummary(ctx: Context, service: ServiceDef, answers: Answers, credits: number) {
@@ -61,6 +70,10 @@ export function createBot({ config, gemini }: BotDeps) {
       .filter((s) => answers[s.key])
       .map((s) => {
         const value = answers[s.key]!;
+        if (s.kind === "file") {
+          const files = filesOf(answers, s.key);
+          return files.length === 1 ? `• 📎 ${escapeHtml(files[0]!.name)}` : `• 📎 ${files.length} ta fayl`;
+        }
         const label = s.options?.find((o) => o.value === value)?.label ?? value;
         return `• ${escapeHtml(label)}`;
       });
@@ -97,8 +110,8 @@ export function createBot({ config, gemini }: BotDeps) {
       await ctx.api.editMessageText(progress.chat.id, progress.message_id, `${header}\n\n${text}`).catch(() => undefined);
     };
     try {
-      const result = await limiter.run(() =>
-        service.generate!(answers, { gemini, photoKeys, progress: onProgress }),
+      const result = await (service.local ? localLimiter : limiter).run(() =>
+        service.generate!(answers, { gemini, download, photoKeys, progress: onProgress }),
       );
       if (result.preview) await ctx.replyWithPhoto(new InputFile(result.preview, "preview.png"));
       for (const extra of result.extra ?? []) await ctx.replyWithDocument(new InputFile(extra.file, extra.filename));
@@ -354,6 +367,56 @@ export function createBot({ config, gemini }: BotDeps) {
     void runJob(ctx, telegramId, service, answers, cost);
   });
 
+  // Fayl so'raladigan qadam: hujjat yoki rasm. Boshqa holatlarda (masalan, to'lov cheki) keyingi handler'ga o'tadi
+  bot.on(["message:photo", "message:document"], async (ctx, next) => {
+    const user = await User.findOne({ telegramId: ctx.from.id });
+    const service = getService(user?.wizard?.service);
+    const stepIndex = user?.wizard?.step ?? -1;
+    const step = service?.steps[stepIndex];
+    if (!user?.wizard || step?.kind !== "file") return next();
+
+    const accept = step.accept?.((user.wizard.answers ?? {}) as Answers) ?? { extensions: [] };
+    const photo = ctx.message.photo?.at(-1);
+    const doc = ctx.message.document;
+    const formats = [...accept.extensions, ...(accept.photos ? ["rasm"] : [])].join(", ");
+    let file: UploadedFile;
+    if (photo) {
+      if (!accept.photos) return ctx.reply(texts.wrongFile(formats), html);
+      file = { fileId: photo.file_id, name: `rasm-${(user.wizard.files?.length ?? 0) + 1}.jpg`, size: photo.file_size };
+    } else {
+      const name = doc!.file_name ?? "fayl";
+      const ext = name.slice(name.lastIndexOf(".")).toLowerCase();
+      if (!accept.extensions.includes(ext)) return ctx.reply(texts.wrongFile(formats), html);
+      file = { fileId: doc!.file_id, name, size: doc!.file_size };
+    }
+    if ((file.size ?? 0) > MAX_DOWNLOAD_BYTES) return ctx.reply(texts.fileTooBig(MAX_DOWNLOAD_BYTES / 1024 / 1024));
+
+    const maxFiles = accept.maxFiles ?? 1;
+    if (maxFiles === 1) return saveAnswer(ctx, ctx.from.id, stepIndex, JSON.stringify([file]));
+
+    // Bir nechta fayl: albom bo'lib kelsa ham hammasi yig'iladi, "Tayyor" bosilganda keyingi qadamga o'tiladi
+    const updated = await User.findOneAndUpdate(
+      { telegramId: ctx.from.id, "wizard.step": stepIndex, [`wizard.files.${maxFiles - 1}`]: { $exists: false } },
+      { $push: { "wizard.files": file } },
+      { returnDocument: "after" },
+    );
+    if (!updated?.wizard) return ctx.reply(texts.tooManyFiles(maxFiles), { reply_markup: filesDoneKeyboard(stepIndex) });
+    await ctx.reply(texts.filesReceived(updated.wizard.files.length, maxFiles), { reply_markup: filesDoneKeyboard(stepIndex) });
+  });
+
+  bot.callbackQuery(/^w:done:(\d+)$/, async (ctx) => {
+    await ctx.answerCallbackQuery();
+    const stepIndex = Number(ctx.match[1]);
+    const user = await User.findOneAndUpdate(
+      { telegramId: ctx.from.id, "wizard.step": stepIndex },
+      { $set: { "wizard.files": [] } },
+    );
+    const files = (user?.wizard?.files ?? []) as UploadedFile[];
+    if (!files.length) return;
+    await ctx.editMessageReplyMarkup().catch(() => undefined);
+    await saveAnswer(ctx, ctx.from.id, stepIndex, JSON.stringify(files));
+  });
+
   registerPayments(bot, { config, gemini, isAdmin });
 
   // Matnli javoblar
@@ -362,11 +425,14 @@ export function createBot({ config, gemini }: BotDeps) {
     const service = getService(user?.wizard?.service);
     const step = service?.steps[user?.wizard?.step ?? -1];
     if (!user?.wizard || !step) return showMenu(ctx, texts.noWizard);
+    if (step.kind === "file") return ctx.reply(texts.sendFile);
     if (step.kind !== "text") return ctx.reply(texts.useButtons);
 
     const value = ctx.message.text.trim();
     if (step.minLength && value.length < step.minLength) return ctx.reply(texts.tooShort(step.minLength));
     if (step.maxLength && value.length > step.maxLength) return ctx.reply(texts.tooLong(step.maxLength));
+    const invalid = step.validate?.(value);
+    if (invalid) return ctx.reply(invalid);
     await saveAnswer(ctx, ctx.from.id, user.wizard.step, value);
   });
 
